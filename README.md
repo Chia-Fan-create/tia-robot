@@ -10,7 +10,10 @@ This repository contains the prototype presentation of the TIA Robot, a project 
 
 #### Contents
 
-prototype_presentation.pdf: A prototype slide deck showcasing the project concept, workflow, and expected outcomes
+[TIA ROBOT project.pdf](./TIA ROBOT project.pdf): A prototype slide deck showcasing the project concept, workflow, and expected outcomes
+
+
+[![TIA Robot Preview](./你的預覽截圖.png)](./TIA ROBOT project.pdf)
 
 #### 🔒 Note
 
