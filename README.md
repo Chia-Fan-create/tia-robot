@@ -4,7 +4,7 @@ A web-based transit analysis tool that visualizes bus stops, routes, service fre
 
 Built with Flask and Matplotlib. The same system has been applied to two cities using their respective open data sources.
 
----
+
 
 ## Cities
 
