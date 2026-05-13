@@ -1,0 +1,12 @@
+# Data files
+pittsburgh/data/gtfs/
+pittsburgh/data/pogoh_stations.csv
+pittsburgh/data/pogoh_trips.csv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store

@@ -1,0 +1,7 @@
+flask>=3.0.0
+pandas>=2.0.0
+matplotlib>=3.8.0
+requests>=2.31.0
+numpy>=1.26.0
+contextily>=1.4.0
+pyproj>=3.6.0

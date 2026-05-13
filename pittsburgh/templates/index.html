@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pittsburgh Bus and Sharing Bike Analyzer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #F0F4F8;
+      color: #1A202C;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    header {
+      background: #1A365D;
+      color: white;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    header h1 { font-size: 1.35rem; font-weight: 600; }
+    header span { font-size: 0.82rem; opacity: 0.7; margin-top: 2px; }
+    .header-icon { font-size: 1.8rem; }
+
+    /* Status bar */
+    .status-bar {
+      background: #2D3748;
+      color: #CBD5E0;
+      font-size: 0.78rem;
+      padding: 6px 32px;
+      display: flex;
+      gap: 20px;
+    }
+    .pill { display: inline-flex; align-items: center; gap: 5px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-green { background: #48BB78; }
+    .dot-red   { background: #FC8181; }
+
+    /* Layout */
+    main { max-width: 960px; margin: 32px auto; padding: 0 20px; }
+
+    /* Card */
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 28px 32px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #2D3748;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #EBF4FF;
+    }
+
+    /* Form */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #4A5568;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #CBD5E0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #F7FAFC;
+      transition: border-color 0.2s;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #4A90D9;
+      background: white;
+    }
+
+    /* Radius control */
+    .radius-full { grid-column: 1 / -1; }
+    .radius-row  { display: flex; align-items: center; gap: 12px; }
+    .radius-row input[type="range"] {
+      flex: 1; height: 6px; accent-color: #4A90D9; cursor: pointer;
+    }
+    .radius-value { min-width: 70px; font-size: 1rem; font-weight: 700; color: #4A90D9; text-align: right; }
+
+    .preset-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .preset-btn {
+      font-size: 0.78rem; padding: 4px 12px;
+      border: 1.5px solid #CBD5E0; border-radius: 20px;
+      background: white; cursor: pointer; color: #4A5568;
+      transition: all 0.15s;
+    }
+    .preset-btn:hover { border-color: #4A90D9; color: #4A90D9; background: #EBF4FF; }
+
+    /* Run button */
+    .run-btn {
+      width: 100%; margin-top: 22px; padding: 13px;
+      background: #2B6CB0; color: white;
+      border: none; border-radius: 9px;
+      font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .run-btn:hover:not(:disabled) { background: #2C5282; }
+    .run-btn:active:not(:disabled) { transform: scale(0.98); }
+    .run-btn:disabled { background: #A0AEC0; cursor: not-allowed; }
+
+    /* Quick examples */
+    .examples { font-size: 0.8rem; color: #718096; margin-top: 12px; }
+    .example-link { color: #4A90D9; cursor: pointer; text-decoration: underline; }
+    .example-link:hover { color: #2B6CB0; }
+
+    /* Loading */
+    .loading { display: none; text-align: center; padding: 48px 20px; color: #718096; }
+    .spinner {
+      width: 42px; height: 42px;
+      border: 4px solid #E2E8F0; border-top-color: #4A90D9;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error */
+    .error-banner {
+      display: none; background: #FFF5F5;
+      border: 1.5px solid #FEB2B2; color: #C53030;
+      border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+
+    /* Results */
+    .results { display: none; }
+    .chart-section {
+      background: white; border-radius: 12px;
+      padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    /* Chart header row */
+    .chart-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
+    }
+    .chart-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.95rem; font-weight: 700; color: #2D3748;
+    }
+    .chart-num {
+      background: #EBF4FF; color: #2B6CB0;
+      border-radius: 50%; width: 26px; height: 26px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.82rem; flex-shrink: 0;
+    }
+
+    /* Download buttons */
+    .dl-group { display: flex; gap: 8px; }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 13px; font-size: 0.78rem; font-weight: 600;
+      border-radius: 6px; border: none; cursor: pointer;
+      text-decoration: none; transition: opacity 0.15s;
+    }
+    .dl-btn:hover { opacity: 0.82; }
+    .dl-btn-png { background: #EBF4FF; color: #2B6CB0; }
+    .dl-btn-csv { background: #E6FFED; color: #276749; }
+
+    /* Chart image */
+    .chart-section img {
+      width: 100%; border-radius: 8px;
+      border: 1px solid #E2E8F0;
+    }
+
+    /* Data-missing warning */
+    .data-warn {
+      background: #FFFBEB; border: 1px solid #F6E05E;
+      color: #744210; border-radius: 8px;
+      padding: 12px 16px; font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="header-icon">🚌</span>
+  <div>
+    <h1>Pittsburgh Transit Analyzer</h1>
+    <span>Bus stops · Routes · Service frequency · POGOH bike share</span>
+  </div>
+</header>
+
+<div class="status-bar">
+  <span class="pill">
+    <span class="dot {{ 'dot-green' if gtfs_ok else 'dot-red' }}"></span>
+    GTFS {{ '✓ loaded' if gtfs_ok else '✗ not found' }}
+  </span>
+  <span class="pill">
+    <span class="dot {{ 'dot-green' if pogoh_ok else 'dot-red' }}"></span>
+    POGOH {{ '✓ loaded' if pogoh_ok else '✗ not found' }}
+  </span>
+</div>
+
+<main>
+  <!-- Input card -->
+  <div class="card">
+    <h2>🔍 Study Area Settings</h2>
+    <div class="form-grid">
+      <div>
+        <label for="lat">Latitude</label>
+        <input type="number" id="lat" step="0.000001"
+               placeholder="e.g. 40.4417" value="40.4417">
+      </div>
+      <div>
+        <label for="lon">Longitude</label>
+        <input type="number" id="lon" step="0.000001"
+               placeholder="e.g. -79.9581" value="-79.9581">
+      </div>
+
+      <div class="radius-full">
+        <label>Search Radius</label>
+        <div class="radius-row">
+          <input type="range" id="radius-slider" min="50" max="2000"
+                 step="50" value="300" oninput="syncRadius(this.value)">
+          <span class="radius-value" id="radius-display">300 m</span>
+          <input type="number" id="radius-input" min="50" max="5000"
+                 value="300" style="width:110px; flex-shrink:0"
+                 oninput="syncRadius(this.value)">
+        </div>
+        <div class="preset-row">
+          <span style="font-size:0.78rem;color:#718096;align-self:center">Quick set:</span>
+          <button class="preset-btn" onclick="setRadius(100)">100 m</button>
+          <button class="preset-btn" onclick="setRadius(300)">300 m</button>
+          <button class="preset-btn" onclick="setRadius(500)">500 m</button>
+          <button class="preset-btn" onclick="setRadius(800)">800 m</button>
+          <button class="preset-btn" onclick="setRadius(1000)">1 km</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="examples">
+      Quick locations:
+      <span class="example-link" onclick="setCoords(40.4417,-79.9581)">Downtown Pittsburgh</span> ·
+      <span class="example-link" onclick="setCoords(40.4441,-79.9602)">Oakland / CMU</span> ·
+      <span class="example-link" onclick="setCoords(40.4561,-79.9163)">East Liberty</span> ·
+      <span class="example-link" onclick="setCoords(40.4285,-80.0025)">South Side</span>
+    </div>
+
+    <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+      ▶ Run Analysis
+    </button>
+  </div>
+
+  <div class="error-banner" id="error-banner"></div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    Generating charts — this may take 15–30 seconds on first run
+    (OSM tiles are downloaded and cached)
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <!-- Chart 1 -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="chart-title">
+          <span class="chart-num">1</span> Bus Stop Locations
+        </div>
+        <div class="dl-group">
+          <a id="dl1" class="dl-btn dl-btn-png" download="bus_stops.png">
+            ⬇ Download PNG
+          </a>
+        </div>
+      </div>
+      <div id="chart1-content"></div>
+    </div>
+
+    <!-- Chart 2a: Route Table -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="chart-title">
+          <span class="chart-num">2a</span> Routes Serving This Area — Table
+        </div>
+        <div class="dl-group">
+          <a id="dl2-table-png" class="dl-btn dl-btn-png" download="routes_table.png">⬇ PNG</a>
+          <a id="dl2-csv" class="dl-btn dl-btn-csv" download="routes.csv">⬇ CSV</a>
+        </div>
+      </div>
+      <div id="chart2-table-content"></div>
+    </div>
+
+    <!-- Chart 2b: Route Map -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="chart-title">
+          <span class="chart-num">2b</span> Routes Serving This Area — Map
+        </div>
+        <div class="dl-group">
+          <a id="dl2-map-png" class="dl-btn dl-btn-png" download="routes_map.png">⬇ PNG</a>
+        </div>
+      </div>
+      <div id="chart2-map-content"></div>
+    </div>
+
+    <!-- Chart 3 -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="chart-title">
+          <span class="chart-num">3</span> Service Frequency &amp; Operating Hours
+        </div>
+        <div class="dl-group">
+          <a id="dl3-png" class="dl-btn dl-btn-png" download="schedule.png">⬇ PNG</a>
+          <a id="dl3-csv" class="dl-btn dl-btn-csv" download="schedule.csv">⬇ CSV</a>
+        </div>
+      </div>
+      <div id="chart3-content"></div>
+    </div>
+
+    <!-- Chart 4a -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="chart-title">
+          <span class="chart-num">4a</span> POGOH Station Locations
+        </div>
+        <div class="dl-group">
+          <a id="dl4a" class="dl-btn dl-btn-png" download="pogoh_map.png">⬇ PNG</a>
+        </div>
+      </div>
+      <div id="chart4a-content"></div>
+    </div>
+
+    <!-- Chart 4b -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <div class="chart-title">
+          <span class="chart-num">4b</span> POGOH Bike Share Usage
+        </div>
+        <div class="dl-group">
+          <a id="dl4b-png" class="dl-btn dl-btn-png" download="pogoh_usage.png">⬇ PNG</a>
+          <a id="dl4b-csv" class="dl-btn dl-btn-csv" download="pogoh_usage.csv">⬇ CSV</a>
+        </div>
+      </div>
+      <div id="chart4b-content"></div>
+    </div>
+
+  </div><!-- /results -->
+</main>
+
+<script>
+  // ── UI helpers ────────────────────────────────────────────────────────────
+
+  function syncRadius(val) {
+    val = Math.max(50, Math.min(5000, parseInt(val) || 300));
+    document.getElementById("radius-slider").value = Math.min(val, 2000);
+    document.getElementById("radius-input").value  = val;
+    document.getElementById("radius-display").textContent =
+      val >= 1000 ? (val / 1000).toFixed(1) + " km" : val + " m";
+  }
+  function setRadius(val) { syncRadius(val); }
+  function setCoords(lat, lon) {
+    document.getElementById("lat").value = lat;
+    document.getElementById("lon").value = lon;
+  }
+
+  // ── Download link helpers ─────────────────────────────────────────────────
+
+  function setDownload(id, dataUri, filename) {
+    const el = document.getElementById(id);
+    if (!el || !dataUri) return;
+    el.href     = dataUri;
+    el.download = filename;
+    el.style.display = "";
+  }
+
+  function setImg(contentId, dataUri) {
+    if (!dataUri) return;
+    document.getElementById(contentId).innerHTML =
+      `<img src="${dataUri}" alt="chart">`;
+  }
+
+  function setWarn(contentId, msg) {
+    document.getElementById(contentId).innerHTML =
+      `<div class="data-warn">⚠️ ${msg}</div>`;
+  }
+
+  // ── Main analysis call ────────────────────────────────────────────────────
+
+  async function runAnalysis() {
+    const lat    = parseFloat(document.getElementById("lat").value);
+    const lon    = parseFloat(document.getElementById("lon").value);
+    const radius = parseInt(document.getElementById("radius-input").value) || 300;
+
+    if (isNaN(lat) || isNaN(lon)) {
+      showError("Please enter valid latitude and longitude.");
+      return;
+    }
+
+    document.getElementById("run-btn").disabled       = true;
+    document.getElementById("loading").style.display  = "block";
+    document.getElementById("results").style.display  = "none";
+    document.getElementById("error-banner").style.display = "none";
+
+    // Hide all download buttons until new data arrives
+    ["dl1","dl2-table-png","dl2-map-png","dl2-csv",
+     "dl3-png","dl3-csv","dl4a","dl4b-png","dl4b-csv"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = "none";
+    });
+
+    try {
+      const resp = await fetch("/analyze", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ lat, lon, radius }),
+      });
+      const data = await resp.json();
+
+      if (!resp.ok) { showError(data.error || "Server error"); return; }
+
+      // Chart 1
+      if (data.chart1) {
+        setImg("chart1-content", data.chart1);
+        setDownload("dl1", data.chart1, "bus_stops.png");
+      }
+
+      // Chart 2 — table + map (separate)
+      if (data.chart2_table) {
+        setImg("chart2-table-content", data.chart2_table);
+        setDownload("dl2-table-png", data.chart2_table, "routes_table.png");
+      }
+      if (data.chart2_map) {
+        setImg("chart2-map-content", data.chart2_map);
+        setDownload("dl2-map-png", data.chart2_map, "routes_map.png");
+      }
+      if (data.chart2_csv)
+        setDownload("dl2-csv", data.chart2_csv, "routes.csv");
+
+      // Chart 3
+      if (data.chart3) {
+        setImg("chart3-content", data.chart3);
+        setDownload("dl3-png", data.chart3, "schedule.png");
+      }
+      if (data.chart3_csv)
+        setDownload("dl3-csv", data.chart3_csv, "schedule.csv");
+
+      // Chart 4a
+      if (data.chart4a) {
+        setImg("chart4a-content", data.chart4a);
+        setDownload("dl4a", data.chart4a, "pogoh_map.png");
+      }
+
+      // Chart 4b
+      if (data.chart4b) {
+        setImg("chart4b-content", data.chart4b);
+        setDownload("dl4b-png", data.chart4b, "pogoh_usage.png");
+      }
+      if (data.chart4b_csv)
+        setDownload("dl4b-csv", data.chart4b_csv, "pogoh_usage.csv");
+
+      // Errors from missing data
+      if (data.gtfs_error)  setWarn("chart1-content", data.gtfs_error);
+      if (data.pogoh_error) {
+        setWarn("chart4a-content", data.pogoh_error);
+        setWarn("chart4b-content", data.pogoh_error);
+      }
+
+      document.getElementById("results").style.display = "block";
+      document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+
+    } catch (err) {
+      showError("Network error: " + err.message);
+    } finally {
+      document.getElementById("run-btn").disabled      = false;
+      document.getElementById("loading").style.display = "none";
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("error-banner");
+    el.textContent     = "❌ " + msg;
+    el.style.display   = "block";
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !document.getElementById("run-btn").disabled)
+      runAnalysis();
+  });
+</script>
+</body>
+</html>
