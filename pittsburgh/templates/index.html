@@ -3,407 +3,737 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pittsburgh Bus and Sharing Bike Analyzer</title>
+  <title>TIA Robot — Pittsburgh</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
+    /* ── Reset & variables ────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #F0F4F8;
-      color: #1A202C;
-      min-height: 100vh;
+    :root {
+      --night:    #0B1521;
+      --navy:     #0D1B2A;
+      --navy-mid: #162336;
+      --gold:     #FFB81C;
+      --gold-dim: rgba(255,184,28,0.15);
+      --cream:    #F5F2EE;
+      --white:    #FFFFFF;
+      --muted:    rgba(240,237,232,0.55);
+      --border:   rgba(255,184,28,0.18);
+      --card-bg:  #FFFFFF;
+      --text-dark:#1A1A1A;
+      --sidebar-w: 340px;
     }
 
-    /* Header */
-    header {
-      background: #1A365D;
-      color: white;
-      padding: 18px 32px;
+    html, body {
+      height: 100%;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text-dark);
+    }
+
+    /* ── Layout ───────────────────────────────────────────────────────────── */
+    .layout {
       display: flex;
-      align-items: center;
-      gap: 14px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      height: 100vh;
+      overflow: hidden;
     }
-    header h1 { font-size: 1.35rem; font-weight: 600; }
-    header span { font-size: 0.82rem; opacity: 0.7; margin-top: 2px; }
-    .header-icon { font-size: 1.8rem; }
 
-    /* Status bar */
-    .status-bar {
-      background: #2D3748;
-      color: #CBD5E0;
+    /* ── Sidebar ──────────────────────────────────────────────────────────── */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Pittsburgh photo at bottom of sidebar */
+    .sidebar-photo {
+      position: absolute;
+      inset: 0;
+      background: url('/static/images/pittsburgh.jpg') center/cover no-repeat;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    /* Gold vertical accent line */
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        var(--gold) 30%,
+        var(--gold) 70%,
+        transparent 100%);
+      opacity: 0.4;
+      z-index: 2;
+    }
+
+    .sidebar-content {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      padding: 36px 28px 28px;
+      overflow-y: auto;
+    }
+
+    /* ── Brand ────────────────────────────────────────────────────────────── */
+    .brand {
+      margin-bottom: 32px;
+    }
+
+    .brand-eyebrow {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .brand-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--cream);
+    }
+
+    .brand-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .brand-sub {
+      margin-top: 10px;
       font-size: 0.78rem;
-      padding: 6px 32px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    /* ── Divider ──────────────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    /* ── Status pills ─────────────────────────────────────────────────────── */
+    .status-row {
       display: flex;
-      gap: 20px;
-    }
-    .pill { display: inline-flex; align-items: center; gap: 5px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .dot-green { background: #48BB78; }
-    .dot-red   { background: #FC8181; }
-
-    /* Layout */
-    main { max-width: 960px; margin: 32px auto; padding: 0 20px; }
-
-    /* Card */
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 28px 32px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      gap: 8px;
       margin-bottom: 24px;
-    }
-    .card h2 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #2D3748;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #EBF4FF;
+      flex-wrap: wrap;
     }
 
-    /* Form */
-    .form-grid {
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-on  { background: #4ADE80; box-shadow: 0 0 6px #4ADE80; }
+    .dot-off { background: #EF4444; }
+
+    /* ── Form labels ──────────────────────────────────────────────────────── */
+    .form-label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 7px;
+    }
+
+    /* ── Coordinate inputs ────────────────────────────────────────────────── */
+    .coord-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 10px;
+      margin-bottom: 18px;
     }
-    @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
 
-    label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #4A5568;
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+    .input-wrap {
+      display: flex;
+      flex-direction: column;
     }
+
     input[type="number"] {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      padding: 9px 11px;
       width: 100%;
-      padding: 10px 12px;
-      border: 1.5px solid #CBD5E0;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      background: #F7FAFC;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background 0.2s;
+      -moz-appearance: textfield;
     }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
     input[type="number"]:focus {
       outline: none;
-      border-color: #4A90D9;
-      background: white;
+      border-color: var(--gold);
+      background: rgba(255,184,28,0.07);
     }
 
-    /* Radius control */
-    .radius-full { grid-column: 1 / -1; }
-    .radius-row  { display: flex; align-items: center; gap: 12px; }
-    .radius-row input[type="range"] {
-      flex: 1; height: 6px; accent-color: #4A90D9; cursor: pointer;
-    }
-    .radius-value { min-width: 70px; font-size: 1rem; font-weight: 700; color: #4A90D9; text-align: right; }
+    /* ── Radius ───────────────────────────────────────────────────────────── */
+    .radius-section { margin-bottom: 18px; }
 
-    .preset-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-    .preset-btn {
-      font-size: 0.78rem; padding: 4px 12px;
-      border: 1.5px solid #CBD5E0; border-radius: 20px;
-      background: white; cursor: pointer; color: #4A5568;
+    .radius-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      height: 3px;
+      accent-color: var(--gold);
+      cursor: pointer;
+      background: rgba(255,255,255,0.12);
+      border-radius: 2px;
+    }
+
+    .radius-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--gold);
+      min-width: 58px;
+      text-align: right;
+    }
+
+    .radius-num {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      padding: 6px 8px;
+      width: 72px;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+    .radius-num::-webkit-inner-spin-button,
+    .radius-num::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .radius-num:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    /* Preset buttons */
+    .presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .preset {
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
       transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
     }
-    .preset-btn:hover { border-color: #4A90D9; color: #4A90D9; background: #EBF4FF; }
+    .preset:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: var(--gold-dim);
+    }
 
-    /* Run button */
+    /* ── Quick locations ──────────────────────────────────────────────────── */
+    .locations-section { margin-bottom: 22px; }
+
+    .loc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .loc-btn {
+      padding: 7px 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+      line-height: 1.35;
+    }
+    .loc-btn:hover {
+      background: var(--gold-dim);
+      border-color: var(--gold);
+      color: var(--cream);
+    }
+    .loc-btn strong {
+      display: block;
+      font-weight: 500;
+      color: var(--cream);
+      font-size: 0.75rem;
+      margin-bottom: 1px;
+    }
+
+    /* ── Run button ───────────────────────────────────────────────────────── */
     .run-btn {
-      width: 100%; margin-top: 22px; padding: 13px;
-      background: #2B6CB0; color: white;
-      border: none; border-radius: 9px;
-      font-size: 1rem; font-weight: 600; cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      width: 100%;
+      padding: 13px;
+      background: var(--gold);
+      color: var(--night);
+      border: none;
+      border-radius: 7px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      margin-top: auto;
     }
-    .run-btn:hover:not(:disabled) { background: #2C5282; }
+    .run-btn:hover:not(:disabled) { opacity: 0.88; }
     .run-btn:active:not(:disabled) { transform: scale(0.98); }
-    .run-btn:disabled { background: #A0AEC0; cursor: not-allowed; }
+    .run-btn:disabled {
+      background: rgba(255,184,28,0.3);
+      color: rgba(11,21,33,0.5);
+      cursor: not-allowed;
+    }
 
-    /* Quick examples */
-    .examples { font-size: 0.8rem; color: #718096; margin-top: 12px; }
-    .example-link { color: #4A90D9; cursor: pointer; text-decoration: underline; }
-    .example-link:hover { color: #2B6CB0; }
+    /* ── Main content area ────────────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--cream);
+      padding: 40px 44px;
+    }
 
-    /* Loading */
-    .loading { display: none; text-align: center; padding: 48px 20px; color: #718096; }
-    .spinner {
-      width: 42px; height: 42px;
-      border: 4px solid #E2E8F0; border-top-color: #4A90D9;
-      border-radius: 50%; animation: spin 0.8s linear infinite;
-      margin: 0 auto 14px;
+    /* ── Welcome / empty state ────────────────────────────────────────────── */
+    .welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      text-align: center;
+      opacity: 0.45;
+    }
+
+    .welcome-city {
+      font-family: 'Playfair Display', serif;
+      font-size: 5rem;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+
+    .welcome-sub {
+      font-size: 0.9rem;
+      color: var(--navy);
+      max-width: 320px;
+      line-height: 1.6;
+    }
+
+    /* ── Loading ──────────────────────────────────────────────────────────── */
+    .loading {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 20px;
+    }
+
+    .spinner-ring {
+      width: 48px; height: 48px;
+      border: 3px solid rgba(255,184,28,0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Error */
+    .loading p {
+      font-size: 0.85rem;
+      color: #888;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Error banner ─────────────────────────────────────────────────────── */
     .error-banner {
-      display: none; background: #FFF5F5;
-      border: 1.5px solid #FEB2B2; color: #C53030;
-      border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;
-      font-size: 0.9rem;
+      display: none;
+      background: #FFF5F5;
+      border-left: 3px solid #E74C3C;
+      color: #C0392B;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      margin-bottom: 28px;
     }
 
-    /* Results */
+    /* ── Results ──────────────────────────────────────────────────────────── */
     .results { display: none; }
-    .chart-section {
-      background: white; border-radius: 12px;
-      padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+
+    /* Section header */
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 16px;
+      margin-top: 44px;
+    }
+    .section-head:first-child { margin-top: 0; }
+
+    .section-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.75rem;
+      font-weight: 400;
+      color: #AAA;
+      letter-spacing: 0.1em;
+      flex-shrink: 0;
     }
 
-    /* Chart header row */
-    .chart-header {
-      display: flex; align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px; gap: 12px; flex-wrap: wrap;
-    }
-    .chart-title {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 0.95rem; font-weight: 700; color: #2D3748;
-    }
-    .chart-num {
-      background: #EBF4FF; color: #2B6CB0;
-      border-radius: 50%; width: 26px; height: 26px;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.82rem; flex-shrink: 0;
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--navy);
     }
 
-    /* Download buttons */
-    .dl-group { display: flex; gap: 8px; }
+    .dl-group {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
     .dl-btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 5px 13px; font-size: 0.78rem; font-weight: 600;
-      border-radius: 6px; border: none; cursor: pointer;
-      text-decoration: none; transition: opacity 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      letter-spacing: 0.03em;
+      transition: opacity 0.15s;
     }
-    .dl-btn:hover { opacity: 0.82; }
-    .dl-btn-png { background: #EBF4FF; color: #2B6CB0; }
-    .dl-btn-csv { background: #E6FFED; color: #276749; }
-
-    /* Chart image */
-    .chart-section img {
-      width: 100%; border-radius: 8px;
-      border: 1px solid #E2E8F0;
+    .dl-btn:hover { opacity: 0.78; }
+    .dl-btn-png {
+      background: #EBF4FF;
+      color: #2B6CB0;
+    }
+    .dl-btn-csv {
+      background: #E6FFED;
+      color: #276749;
     }
 
-    /* Data-missing warning */
+    /* Chart card */
+    .chart-card {
+      background: var(--card-bg);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+      margin-bottom: 8px;
+    }
+
+    .chart-card img {
+      width: 100%;
+      display: block;
+    }
+
+    /* Data warning */
     .data-warn {
-      background: #FFFBEB; border: 1px solid #F6E05E;
-      color: #744210; border-radius: 8px;
-      padding: 12px 16px; font-size: 0.875rem;
+      background: #FFFBEB;
+      border-left: 3px solid #F6E05E;
+      color: #744210;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 0.85rem;
     }
+
+    /* ── Scrollbar styling ────────────────────────────────────────────────── */
+    .main::-webkit-scrollbar { width: 6px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: #CCC; border-radius: 3px; }
+
+    .sidebar-content::-webkit-scrollbar { width: 4px; }
+    .sidebar-content::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-content::-webkit-scrollbar-thumb { background: rgba(255,184,28,0.25); border-radius: 2px; }
   </style>
 </head>
 <body>
 
-<header>
-  <span class="header-icon">🚌</span>
-  <div>
-    <h1>Pittsburgh Transit Analyzer</h1>
-    <span>Bus stops · Routes · Service frequency · POGOH bike share</span>
-  </div>
-</header>
+<div class="layout">
 
-<div class="status-bar">
-  <span class="pill">
-    <span class="dot {{ 'dot-green' if gtfs_ok else 'dot-red' }}"></span>
-    GTFS {{ '✓ loaded' if gtfs_ok else '✗ not found' }}
-  </span>
-  <span class="pill">
-    <span class="dot {{ 'dot-green' if pogoh_ok else 'dot-red' }}"></span>
-    POGOH {{ '✓ loaded' if pogoh_ok else '✗ not found' }}
-  </span>
-</div>
+  <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-photo"></div>
 
-<main>
-  <!-- Input card -->
-  <div class="card">
-    <h2>🔍 Study Area Settings</h2>
-    <div class="form-grid">
-      <div>
-        <label for="lat">Latitude</label>
-        <input type="number" id="lat" step="0.000001"
-               placeholder="e.g. 40.4417" value="40.4417">
-      </div>
-      <div>
-        <label for="lon">Longitude</label>
-        <input type="number" id="lon" step="0.000001"
-               placeholder="e.g. -79.9581" value="-79.9581">
+    <div class="sidebar-content">
+
+      <!-- Brand -->
+      <div class="brand">
+        <div class="brand-eyebrow">Transit Intelligence Analyzer</div>
+        <h1 class="brand-title">TIA Robot<br><em>Pittsburgh</em></h1>
+        <p class="brand-sub">Bus stops · Routes · Service frequency<br>POGOH bike share analytics</p>
       </div>
 
-      <div class="radius-full">
-        <label>Search Radius</label>
+      <!-- Status -->
+      <div class="status-row">
+        <span class="status-pill">
+          <span class="dot {{ 'dot-on' if gtfs_ok else 'dot-off' }}"></span>
+          GTFS {{ '✓' if gtfs_ok else '✗' }}
+        </span>
+        <span class="status-pill">
+          <span class="dot {{ 'dot-on' if pogoh_ok else 'dot-off' }}"></span>
+          POGOH {{ '✓' if pogoh_ok else '✗' }}
+        </span>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Coordinates -->
+      <div style="margin-bottom: 18px;">
+        <div class="form-label">Coordinates</div>
+        <div class="coord-grid">
+          <div class="input-wrap">
+            <label class="form-label" style="font-size:0.62rem; margin-bottom:5px;">Latitude</label>
+            <input type="number" id="lat" step="0.000001" value="40.4417" placeholder="40.4417">
+          </div>
+          <div class="input-wrap">
+            <label class="form-label" style="font-size:0.62rem; margin-bottom:5px;">Longitude</label>
+            <input type="number" id="lon" step="0.000001" value="-79.9581" placeholder="-79.9581">
+          </div>
+        </div>
+      </div>
+
+      <!-- Radius -->
+      <div class="radius-section">
+        <div class="form-label">Search Radius</div>
         <div class="radius-row">
-          <input type="range" id="radius-slider" min="50" max="2000"
-                 step="50" value="300" oninput="syncRadius(this.value)">
-          <span class="radius-value" id="radius-display">300 m</span>
-          <input type="number" id="radius-input" min="50" max="5000"
-                 value="300" style="width:110px; flex-shrink:0"
+          <input type="range" id="radius-slider" min="50" max="2000" step="50" value="300"
                  oninput="syncRadius(this.value)">
+          <span class="radius-val" id="radius-display">300 m</span>
         </div>
-        <div class="preset-row">
-          <span style="font-size:0.78rem;color:#718096;align-self:center">Quick set:</span>
-          <button class="preset-btn" onclick="setRadius(100)">100 m</button>
-          <button class="preset-btn" onclick="setRadius(300)">300 m</button>
-          <button class="preset-btn" onclick="setRadius(500)">500 m</button>
-          <button class="preset-btn" onclick="setRadius(800)">800 m</button>
-          <button class="preset-btn" onclick="setRadius(1000)">1 km</button>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+          <span style="font-size:0.7rem; color:var(--muted);">Custom:</span>
+          <input type="number" class="radius-num" id="radius-input" min="50" max="5000"
+                 value="300" oninput="syncRadius(this.value)">
+          <span style="font-size:0.7rem; color:var(--muted);">m</span>
+        </div>
+        <div class="presets">
+          <button class="preset" onclick="setRadius(100)">100 m</button>
+          <button class="preset" onclick="setRadius(300)">300 m</button>
+          <button class="preset" onclick="setRadius(500)">500 m</button>
+          <button class="preset" onclick="setRadius(800)">800 m</button>
+          <button class="preset" onclick="setRadius(1000)">1 km</button>
         </div>
       </div>
-    </div>
 
-    <div class="examples">
-      Quick locations:
-      <span class="example-link" onclick="setCoords(40.4417,-79.9581)">Downtown Pittsburgh</span> ·
-      <span class="example-link" onclick="setCoords(40.4441,-79.9602)">Oakland / CMU</span> ·
-      <span class="example-link" onclick="setCoords(40.4561,-79.9163)">East Liberty</span> ·
-      <span class="example-link" onclick="setCoords(40.4285,-80.0025)">South Side</span>
-    </div>
+      <div class="divider"></div>
 
-    <button class="run-btn" id="run-btn" onclick="runAnalysis()">
-      ▶ Run Analysis
-    </button>
-  </div>
-
-  <div class="error-banner" id="error-banner"></div>
-
-  <div class="loading" id="loading">
-    <div class="spinner"></div>
-    Generating charts — this may take 15–30 seconds on first run
-    (OSM tiles are downloaded and cached)
-  </div>
-
-  <!-- Results -->
-  <div class="results" id="results">
-
-    <!-- Chart 1 -->
-    <div class="chart-section">
-      <div class="chart-header">
-        <div class="chart-title">
-          <span class="chart-num">1</span> Bus Stop Locations
+      <!-- Quick locations -->
+      <div class="locations-section">
+        <div class="form-label">Quick Locations</div>
+        <div class="loc-grid">
+          <button class="loc-btn" onclick="setCoords(40.4417,-79.9581)">
+            <strong>Downtown</strong>40.4417, -79.9581
+          </button>
+          <button class="loc-btn" onclick="setCoords(40.4441,-79.9602)">
+            <strong>Oakland / CMU</strong>40.4441, -79.9602
+          </button>
+          <button class="loc-btn" onclick="setCoords(40.4561,-79.9163)">
+            <strong>East Liberty</strong>40.4561, -79.9163
+          </button>
+          <button class="loc-btn" onclick="setCoords(40.4285,-80.0025)">
+            <strong>South Side</strong>40.4285, -80.0025
+          </button>
         </div>
+      </div>
+
+      <div style="flex:1;"></div>
+
+      <!-- Run button -->
+      <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+        Run Analysis
+      </button>
+
+    </div><!-- /sidebar-content -->
+  </aside>
+
+  <!-- ── Main ──────────────────────────────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Welcome state -->
+    <div class="welcome" id="welcome">
+      <div class="welcome-city">Pittsburgh</div>
+      <p class="welcome-sub">Enter coordinates and a search radius, then run the analysis to explore transit data.</p>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner-ring"></div>
+      <p>Generating charts — this may take 15–30 seconds</p>
+    </div>
+
+    <!-- Error -->
+    <div class="error-banner" id="error-banner"></div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+
+      <!-- Chart 1 -->
+      <div class="section-head">
+        <span class="section-num">01</span>
+        <span class="section-title">Bus Stop Locations</span>
         <div class="dl-group">
-          <a id="dl1" class="dl-btn dl-btn-png" download="bus_stops.png">
-            ⬇ Download PNG
-          </a>
+          <a id="dl1" class="dl-btn dl-btn-png" download="bus_stops.png">⬇ PNG</a>
         </div>
       </div>
-      <div id="chart1-content"></div>
-    </div>
+      <div class="chart-card"><div id="chart1-content"></div></div>
 
-    <!-- Chart 2a: Route Table -->
-    <div class="chart-section">
-      <div class="chart-header">
-        <div class="chart-title">
-          <span class="chart-num">2a</span> Routes Serving This Area — Table
-        </div>
+      <!-- Chart 2a -->
+      <div class="section-head">
+        <span class="section-num">02</span>
+        <span class="section-title">Routes — Table</span>
         <div class="dl-group">
           <a id="dl2-table-png" class="dl-btn dl-btn-png" download="routes_table.png">⬇ PNG</a>
           <a id="dl2-csv" class="dl-btn dl-btn-csv" download="routes.csv">⬇ CSV</a>
         </div>
       </div>
-      <div id="chart2-table-content"></div>
-    </div>
+      <div class="chart-card"><div id="chart2-table-content"></div></div>
 
-    <!-- Chart 2b: Route Map -->
-    <div class="chart-section">
-      <div class="chart-header">
-        <div class="chart-title">
-          <span class="chart-num">2b</span> Routes Serving This Area — Map
-        </div>
+      <!-- Chart 2b -->
+      <div class="section-head">
+        <span class="section-num">02</span>
+        <span class="section-title">Routes — Map</span>
         <div class="dl-group">
           <a id="dl2-map-png" class="dl-btn dl-btn-png" download="routes_map.png">⬇ PNG</a>
         </div>
       </div>
-      <div id="chart2-map-content"></div>
-    </div>
+      <div class="chart-card"><div id="chart2-map-content"></div></div>
 
-    <!-- Chart 3 -->
-    <div class="chart-section">
-      <div class="chart-header">
-        <div class="chart-title">
-          <span class="chart-num">3</span> Service Frequency &amp; Operating Hours
-        </div>
+      <!-- Chart 3 -->
+      <div class="section-head">
+        <span class="section-num">03</span>
+        <span class="section-title">Service Frequency &amp; Operating Hours</span>
         <div class="dl-group">
           <a id="dl3-png" class="dl-btn dl-btn-png" download="schedule.png">⬇ PNG</a>
           <a id="dl3-csv" class="dl-btn dl-btn-csv" download="schedule.csv">⬇ CSV</a>
         </div>
       </div>
-      <div id="chart3-content"></div>
-    </div>
+      <div class="chart-card"><div id="chart3-content"></div></div>
 
-    <!-- Chart 4a -->
-    <div class="chart-section">
-      <div class="chart-header">
-        <div class="chart-title">
-          <span class="chart-num">4a</span> POGOH Station Locations
-        </div>
+      <!-- Chart 4a -->
+      <div class="section-head">
+        <span class="section-num">04</span>
+        <span class="section-title">POGOH Station Locations</span>
         <div class="dl-group">
           <a id="dl4a" class="dl-btn dl-btn-png" download="pogoh_map.png">⬇ PNG</a>
         </div>
       </div>
-      <div id="chart4a-content"></div>
-    </div>
+      <div class="chart-card"><div id="chart4a-content"></div></div>
 
-    <!-- Chart 4b -->
-    <div class="chart-section">
-      <div class="chart-header">
-        <div class="chart-title">
-          <span class="chart-num">4b</span> POGOH Bike Share Usage
-        </div>
+      <!-- Chart 4b -->
+      <div class="section-head">
+        <span class="section-num">04</span>
+        <span class="section-title">POGOH Hourly Turnover Rate</span>
         <div class="dl-group">
-          <a id="dl4b-png" class="dl-btn dl-btn-png" download="pogoh_usage.png">⬇ PNG</a>
-          <a id="dl4b-csv" class="dl-btn dl-btn-csv" download="pogoh_usage.csv">⬇ CSV</a>
+          <a id="dl4b-png" class="dl-btn dl-btn-png" download="pogoh_turnover.png">⬇ PNG</a>
+          <a id="dl4b-csv" class="dl-btn dl-btn-csv" download="pogoh_turnover.csv">⬇ CSV</a>
         </div>
       </div>
-      <div id="chart4b-content"></div>
-    </div>
+      <div class="chart-card"><div id="chart4b-content"></div></div>
 
-  </div><!-- /results -->
-</main>
+      <!-- Chart 4c -->
+      <div class="section-head">
+        <span class="section-num">04</span>
+        <span class="section-title">POGOH Supply / Demand Balance</span>
+        <div class="dl-group">
+          <a id="dl4c-png" class="dl-btn dl-btn-png" download="pogoh_balance.png">⬇ PNG</a>
+          <a id="dl4c-csv" class="dl-btn dl-btn-csv" download="pogoh_balance.csv">⬇ CSV</a>
+        </div>
+      </div>
+      <div class="chart-card"><div id="chart4c-content"></div></div>
+
+    </div><!-- /results -->
+  </main>
+
+</div><!-- /layout -->
 
 <script>
-  // ── UI helpers ────────────────────────────────────────────────────────────
-
+  // ── Radius sync ───────────────────────────────────────────────────────────
   function syncRadius(val) {
     val = Math.max(50, Math.min(5000, parseInt(val) || 300));
     document.getElementById("radius-slider").value = Math.min(val, 2000);
     document.getElementById("radius-input").value  = val;
-    document.getElementById("radius-display").textContent =
-      val >= 1000 ? (val / 1000).toFixed(1) + " km" : val + " m";
+    const disp = val >= 1000 ? (val / 1000).toFixed(1) + " km" : val + " m";
+    document.getElementById("radius-display").textContent = disp;
   }
-  function setRadius(val) { syncRadius(val); }
+  function setRadius(v) { syncRadius(v); }
   function setCoords(lat, lon) {
     document.getElementById("lat").value = lat;
     document.getElementById("lon").value = lon;
   }
 
-  // ── Download link helpers ─────────────────────────────────────────────────
-
-  function setDownload(id, dataUri, filename) {
+  // ── Download helpers ──────────────────────────────────────────────────────
+  function setDownload(id, uri, filename) {
     const el = document.getElementById(id);
-    if (!el || !dataUri) return;
-    el.href     = dataUri;
+    if (!el || !uri) return;
+    el.href     = uri;
     el.download = filename;
     el.style.display = "";
   }
-
-  function setImg(contentId, dataUri) {
-    if (!dataUri) return;
+  function setImg(contentId, uri) {
+    if (!uri) return;
     document.getElementById(contentId).innerHTML =
-      `<img src="${dataUri}" alt="chart">`;
+      `<img src="${uri}" alt="chart">`;
   }
-
   function setWarn(contentId, msg) {
     document.getElementById(contentId).innerHTML =
-      `<div class="data-warn">⚠️ ${msg}</div>`;
+      `<div class="data-warn">⚠ ${msg}</div>`;
   }
 
-  // ── Main analysis call ────────────────────────────────────────────────────
-
+  // ── Analysis ──────────────────────────────────────────────────────────────
   async function runAnalysis() {
     const lat    = parseFloat(document.getElementById("lat").value);
     const lon    = parseFloat(document.getElementById("lon").value);
@@ -414,14 +744,16 @@
       return;
     }
 
-    document.getElementById("run-btn").disabled       = true;
-    document.getElementById("loading").style.display  = "block";
-    document.getElementById("results").style.display  = "none";
+    // UI: hide welcome, show loading
+    document.getElementById("welcome").style.display    = "none";
+    document.getElementById("loading").style.display    = "flex";
+    document.getElementById("results").style.display    = "none";
     document.getElementById("error-banner").style.display = "none";
+    document.getElementById("run-btn").disabled         = true;
 
-    // Hide all download buttons until new data arrives
-    ["dl1","dl2-table-png","dl2-map-png","dl2-csv",
-     "dl3-png","dl3-csv","dl4a","dl4b-png","dl4b-csv"].forEach(id => {
+    // Hide all download buttons
+    ["dl1","dl2-table-png","dl2-map-png","dl2-csv","dl3-png","dl3-csv",
+     "dl4a","dl4b-png","dl4b-csv","dl4c-png","dl4c-csv"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = "none";
     });
@@ -436,51 +768,23 @@
 
       if (!resp.ok) { showError(data.error || "Server error"); return; }
 
-      // Chart 1
-      if (data.chart1) {
-        setImg("chart1-content", data.chart1);
-        setDownload("dl1", data.chart1, "bus_stops.png");
-      }
+      // Populate charts
+      if (data.chart1) { setImg("chart1-content", data.chart1); setDownload("dl1", data.chart1, "bus_stops.png"); }
+      if (data.chart2_table) { setImg("chart2-table-content", data.chart2_table); setDownload("dl2-table-png", data.chart2_table, "routes_table.png"); }
+      if (data.chart2_map)   { setImg("chart2-map-content",   data.chart2_map);   setDownload("dl2-map-png",   data.chart2_map,   "routes_map.png"); }
+      if (data.chart2_csv)     setDownload("dl2-csv",    data.chart2_csv,    "routes.csv");
+      if (data.chart3)       { setImg("chart3-content",  data.chart3);        setDownload("dl3-png",       data.chart3,       "schedule.png"); }
+      if (data.chart3_csv)     setDownload("dl3-csv",    data.chart3_csv,    "schedule.csv");
+      if (data.chart4a)      { setImg("chart4a-content", data.chart4a);       setDownload("dl4a",          data.chart4a,      "pogoh_map.png"); }
+      if (data.chart4b)      { setImg("chart4b-content", data.chart4b);       setDownload("dl4b-png",      data.chart4b,      "pogoh_turnover.png"); }
+      if (data.chart4b_csv)    setDownload("dl4b-csv",   data.chart4b_csv,   "pogoh_turnover.csv");
+      if (data.chart4c)      { setImg("chart4c-content", data.chart4c);       setDownload("dl4c-png",      data.chart4c,      "pogoh_balance.png"); }
+      if (data.chart4c_csv)    setDownload("dl4c-csv",   data.chart4c_csv,   "pogoh_balance.csv");
 
-      // Chart 2 — table + map (separate)
-      if (data.chart2_table) {
-        setImg("chart2-table-content", data.chart2_table);
-        setDownload("dl2-table-png", data.chart2_table, "routes_table.png");
-      }
-      if (data.chart2_map) {
-        setImg("chart2-map-content", data.chart2_map);
-        setDownload("dl2-map-png", data.chart2_map, "routes_map.png");
-      }
-      if (data.chart2_csv)
-        setDownload("dl2-csv", data.chart2_csv, "routes.csv");
-
-      // Chart 3
-      if (data.chart3) {
-        setImg("chart3-content", data.chart3);
-        setDownload("dl3-png", data.chart3, "schedule.png");
-      }
-      if (data.chart3_csv)
-        setDownload("dl3-csv", data.chart3_csv, "schedule.csv");
-
-      // Chart 4a
-      if (data.chart4a) {
-        setImg("chart4a-content", data.chart4a);
-        setDownload("dl4a", data.chart4a, "pogoh_map.png");
-      }
-
-      // Chart 4b
-      if (data.chart4b) {
-        setImg("chart4b-content", data.chart4b);
-        setDownload("dl4b-png", data.chart4b, "pogoh_usage.png");
-      }
-      if (data.chart4b_csv)
-        setDownload("dl4b-csv", data.chart4b_csv, "pogoh_usage.csv");
-
-      // Errors from missing data
       if (data.gtfs_error)  setWarn("chart1-content", data.gtfs_error);
       if (data.pogoh_error) {
-        setWarn("chart4a-content", data.pogoh_error);
-        setWarn("chart4b-content", data.pogoh_error);
+        ["chart4a-content","chart4b-content","chart4c-content"]
+          .forEach(id => setWarn(id, data.pogoh_error));
       }
 
       document.getElementById("results").style.display = "block";
@@ -496,10 +800,12 @@
 
   function showError(msg) {
     const el = document.getElementById("error-banner");
-    el.textContent     = "❌ " + msg;
-    el.style.display   = "block";
+    el.textContent   = "✕ " + msg;
+    el.style.display = "block";
+    document.getElementById("loading").style.display = "none";
   }
 
+  // Enter key shortcut
   document.addEventListener("keydown", e => {
     if (e.key === "Enter" && !document.getElementById("run-btn").disabled)
       runAnalysis();

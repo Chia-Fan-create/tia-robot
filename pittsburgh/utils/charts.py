@@ -531,36 +531,22 @@ def chart3_schedule(gtfs, lat, lon, radius_m):
 
 # ── Chart 4a: POGOH station map ───────────────────────────────────────────────
 
-def chart4a_pogoh_map(pogoh_stations, pogoh_trips, lat, lon, radius_m):
+def chart4a_pogoh_map(pogoh_precomputed, lat, lon, radius_m):
     """
     Square map of POGOH stations within the study area.
-    Departure stations → POGOH navy (#003865)
-    Arrival stations   → POGOH teal  (#00B2A9)
-    Bubble size ∝ total trip activity.
+    Bubble color and size reflect total trip activity (dep + arr).
+    Accepts pre-computed data dict from precompute_pogoh().
     """
-    stations_in = filter_by_radius(
-        pogoh_stations.dropna(subset=["Latitude", "Longitude"]),
-        lat, lon, radius_m,
-        lat_col="Latitude", lon_col="Longitude",
-    )
+    all_stations = pogoh_precomputed["stations"].dropna(subset=["Latitude", "Longitude"])
+    stations_in  = filter_by_radius(all_stations, lat, lon, radius_m,
+                                    lat_col="Latitude", lon_col="Longitude")
     if stations_in.empty:
         return _empty_chart("No POGOH stations found within range")
 
-    ids_in = set(stations_in["Id"].astype(str))
-    dep = (pogoh_trips[pogoh_trips["Start Station Id"].isin(ids_in)]
-           .groupby("Start Station Id").size().rename("departures"))
-    arr = (pogoh_trips[pogoh_trips["End Station Id"].isin(ids_in)]
-           .groupby("End Station Id").size().rename("arrivals"))
-
-    usage = (
-        stations_in[["Id", "Name", "Latitude", "Longitude", "Total Docks", "dist_m"]]
-        .set_index("Id").join(dep, how="left").join(arr, how="left")
-        .fillna(0).reset_index()
-    )
-    usage["total"] = usage["departures"] + usage["arrivals"]
-    max_total      = max(usage["total"].max(), 1)
-    # Smaller bubbles: base 80, max extra 220 (was 500+50)
-    sizes          = (usage["total"] / max_total * 220 + 80).values
+    # Total activity already computed in enriched stations DataFrame
+    usage      = stations_in.copy()
+    max_total  = max(usage["total"].max(), 1)
+    sizes      = (usage["total"] / max_total * 220 + 80).values
 
     fig, ax = plt.subplots(figsize=(8, 8))
     osm_ok  = _setup_map_ax(ax, lon, lat, radius_m)
@@ -623,74 +609,164 @@ def chart4a_pogoh_map(pogoh_stations, pogoh_trips, lat, lon, radius_m):
     return _fig_to_bytes(fig)
 
 
-# ── Chart 4b: POGOH usage bar chart ──────────────────────────────────────────
+# ── Chart 4b: Hourly turnover rate heatmap ───────────────────────────────────
 
-def chart4b_pogoh_usage(pogoh_stations, pogoh_trips, lat, lon, radius_m):
+def chart4b_turnover_heatmap(pogoh_precomputed, lat, lon, radius_m):
     """
-    Horizontal bar chart: departures vs arrivals per POGOH station.
-    Uses POGOH official colors: navy for departures, teal for arrivals.
+    Heatmap of hourly turnover rate for POGOH stations in the study area.
+    Turnover rate = departures per hour / Total Docks.
+    Only stations within radius_m are shown on the Y-axis.
     Returns (png_bytes, csv_df).
     """
-    stations_in = filter_by_radius(
-        pogoh_stations.dropna(subset=["Latitude", "Longitude"]),
-        lat, lon, radius_m,
-        lat_col="Latitude", lon_col="Longitude",
-    )
+    all_stations = pogoh_precomputed["stations"].dropna(subset=["Latitude", "Longitude"])
+    stations_in  = filter_by_radius(all_stations, lat, lon, radius_m,
+                                    lat_col="Latitude", lon_col="Longitude")
+
     if stations_in.empty:
         return _empty_chart("No POGOH stations found within range"), pd.DataFrame()
 
-    ids_in = set(stations_in["Id"].astype(str))
-    dep = (pogoh_trips[pogoh_trips["Start Station Id"].isin(ids_in)]
-           .groupby("Start Station Id").size().rename("departures"))
-    arr = (pogoh_trips[pogoh_trips["End Station Id"].isin(ids_in)]
-           .groupby("End Station Id").size().rename("arrivals"))
+    ids_in    = stations_in["Id"].astype(str).tolist()
+    turnover  = pogoh_precomputed["turnover"]
+    data_days = pogoh_precomputed["data_days"]
 
-    usage = (
-        stations_in[["Id", "Name", "Total Docks", "dist_m"]]
-        .set_index("Id").join(dep, how="left").join(arr, how="left")
-        .fillna(0).reset_index()
+    # Filter to stations in range; keep only IDs that exist in the pivot
+    ids_available = [i for i in ids_in if i in turnover.index]
+    if not ids_available:
+        return _empty_chart("No turnover data available for stations in range"), pd.DataFrame()
+
+    # Subset and attach station names for Y-axis labels
+    pivot = turnover.loc[ids_available].copy()
+    name_map = stations_in.set_index("Id")["Name"]
+    pivot.index = [name_map.get(i, i) for i in pivot.index]
+
+    n_stations = len(pivot)
+    fig_h = max(4, n_stations * 0.55 + 2.5)
+    fig, ax = plt.subplots(figsize=(12, fig_h))
+
+    im = ax.imshow(pivot.values, aspect="auto", cmap="YlOrRd",
+                   interpolation="nearest")
+    ax.set_xticks(range(24))
+    ax.set_xticklabels([f"{h:02d}" for h in range(24)], fontsize=8)
+    ax.set_yticks(range(n_stations))
+    ax.set_yticklabels(pivot.index, fontsize=9)
+    ax.set_xlabel("Hour of day")
+    ax.set_title(
+        f"POGOH Hourly Turnover Rate  ({n_stations} stations within {radius_m} m)\n"
+        f"Turnover = departures per hour / total docks  "
+        f"(data period: {data_days} days)",
+        fontsize=11,
     )
-    usage["total"]       = usage["departures"] + usage["arrivals"]
-    usage["Total Docks"] = pd.to_numeric(usage["Total Docks"], errors="coerce").fillna(1)
-    usage["usage_rate"]  = (usage["total"] / usage["Total Docks"]).round(1)
-    usage                = usage.sort_values("total", ascending=False)
-    usage["short_name"]  = usage["Name"].apply(
+    fig.colorbar(im, ax=ax, label="Turnover rate (trips / dock)", shrink=0.8)
+    fig.tight_layout()
+
+    # CSV: station × hour matrix with turnover values
+    csv_df = pivot.copy()
+    csv_df.columns = [f"{h:02d}:00" for h in range(24)]
+    csv_df.index.name = "Station"
+    csv_df = csv_df.reset_index()
+
+    return _fig_to_bytes(fig), csv_df
+
+
+# ── Chart 4c: Supply/demand balance ──────────────────────────────────────────
+
+def chart4c_balance(pogoh_precomputed, lat, lon, radius_m):
+    """
+    Horizontal bar chart showing supply/demand balance for each
+    POGOH station in the study area.
+
+    Two sub-charts side by side:
+      Left  — absolute net flow (departures − arrivals), in trip counts
+      Right — balance ratio    (net flow / total),       range −1 to +1
+
+    Red bars  = net outflow (more departures → bikes leave the station)
+    Blue bars = net inflow  (more arrivals   → bikes accumulate)
+
+    Returns (png_bytes, csv_df).
+    """
+    all_stations = pogoh_precomputed["stations"].dropna(subset=["Latitude", "Longitude"])
+    stations_in  = filter_by_radius(all_stations, lat, lon, radius_m,
+                                    lat_col="Latitude", lon_col="Longitude")
+
+    if stations_in.empty:
+        return _empty_chart("No POGOH stations found within range"), pd.DataFrame()
+
+    ids_in   = set(stations_in["Id"].astype(str))
+    balance  = pogoh_precomputed["balance"]
+    bal_in   = balance[balance["Id"].isin(ids_in)].copy()
+
+    if bal_in.empty:
+        return _empty_chart("No balance data available for stations in range"), pd.DataFrame()
+
+    bal_in = bal_in.sort_values("net_flow", ascending=True).reset_index(drop=True)
+    bal_in["short_name"] = bal_in["Name"].apply(
         lambda n: n if len(n) <= 30 else n[:28] + "…"
     )
 
-    n       = len(usage)
-    fig_h   = max(4, n * 0.6 + 2.5)
-    fig, ax = plt.subplots(figsize=(10, fig_h))
+    n     = len(bal_in)
+    fig_h = max(4, n * 0.65 + 2.5)
+    fig, (ax_abs, ax_ratio) = plt.subplots(1, 2, figsize=(13, fig_h))
 
-    bar_h = 0.35
-    y     = range(n)
-    ax.barh([i + bar_h / 2 for i in y], usage["departures"],
-            height=bar_h, color=POGOH_DARK, alpha=0.88, label="Departures")
-    ax.barh([i - bar_h / 2 for i in y], usage["arrivals"],
-            height=bar_h, color=POGOH_TEAL, alpha=0.88, label="Arrivals")
+    def _bar_colors(values):
+        """Red for outflow (positive), blue for inflow (negative)."""
+        return [RED if v >= 0 else BLUE for v in values]
 
-    ax.set_yticks(list(y))
-    ax.set_yticklabels(usage["short_name"], fontsize=9)
-    ax.set_xlabel("Number of trips")
-    ax.set_title(
-        f"POGOH Bike Share Usage  ({n} stations within {radius_m} m)",
-        fontsize=12,
+    # ── Left: absolute net flow ──
+    colors_abs = _bar_colors(bal_in["net_flow"])
+    ax_abs.barh(bal_in["short_name"], bal_in["net_flow"],
+                color=colors_abs, alpha=0.85, height=0.6)
+    ax_abs.axvline(0, color="#555", linewidth=1.0, linestyle="-")
+    ax_abs.set_xlabel("Net flow (departures − arrivals)")
+    ax_abs.set_title("Absolute Net Flow", fontsize=11)
+    ax_abs.grid(True, axis="x", alpha=0.3)
+
+    # Annotate actual dep / arr numbers
+    for i, row in enumerate(bal_in.itertuples()):
+        x_pos = row.net_flow
+        offset = max(abs(bal_in["net_flow"].max()), 1) * 0.03
+        ha = "left" if x_pos >= 0 else "right"
+        x_txt = x_pos + offset if x_pos >= 0 else x_pos - offset
+        ax_abs.text(x_txt, i,
+                    f"↑{row.departures}  ↓{row.arrivals}",
+                    va="center", ha=ha, fontsize=7.5, color="#333")
+
+    # ── Right: balance ratio ──
+    colors_ratio = _bar_colors(bal_in["balance_ratio"])
+    ax_ratio.barh(bal_in["short_name"], bal_in["balance_ratio"],
+                  color=colors_ratio, alpha=0.85, height=0.6)
+    ax_ratio.axvline(0, color="#555", linewidth=1.0, linestyle="-")
+    ax_ratio.set_xlabel("Balance ratio  (net flow / total trips)")
+    ax_ratio.set_title("Balance Ratio  (−1 to +1)", fontsize=11)
+    ax_ratio.set_xlim(-1.15, 1.15)
+    ax_ratio.grid(True, axis="x", alpha=0.3)
+
+    for i, row in enumerate(bal_in.itertuples()):
+        x_pos = row.balance_ratio
+        offset = 0.04
+        ha = "left" if x_pos >= 0 else "right"
+        x_txt = x_pos + offset if x_pos >= 0 else x_pos - offset
+        ax_ratio.text(x_txt, i, f"{row.balance_ratio:+.2f}",
+                      va="center", ha=ha, fontsize=8, color="#333")
+
+    # Shared legend
+    legend_handles = [
+        mpatches.Patch(color=RED,  label="Net outflow (more departures)"),
+        mpatches.Patch(color=BLUE, label="Net inflow  (more arrivals)"),
+    ]
+    fig.legend(handles=legend_handles, loc="lower center",
+               ncol=2, fontsize=9, framealpha=0.9,
+               bbox_to_anchor=(0.5, -0.02))
+
+    fig.suptitle(
+        f"POGOH Supply / Demand Balance  ({n} stations within {radius_m} m)",
+        fontsize=12, y=1.01,
     )
-    ax.legend(fontsize=9)
-    ax.invert_yaxis()
-    ax.grid(True, axis="x", alpha=0.35)
-
-    max_val = max(usage["departures"].max(), usage["arrivals"].max(), 1)
-    for i, row in enumerate(usage.itertuples()):
-        ax.text(max_val * 1.02, i,
-                f"rate: {row.usage_rate}×",
-                va="center", fontsize=8, color=GRAY)
-    ax.set_xlim(0, max_val * 1.28)
-
     fig.tight_layout()
 
-    csv_df = usage[["Name", "Total Docks", "departures", "arrivals",
-                    "total", "usage_rate"]].copy()
-    csv_df.columns = ["Station", "Total Docks", "Departures",
-                      "Arrivals", "Total trips", "Usage rate (trips/dock)"]
+    # CSV export
+    csv_df = bal_in[["Name", "Total Docks", "departures", "arrivals",
+                     "net_flow", "balance_ratio"]].copy()
+    csv_df.columns = ["Station", "Total Docks", "Departures", "Arrivals",
+                      "Net flow", "Balance ratio"]
+
     return _fig_to_bytes(fig), csv_df

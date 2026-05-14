@@ -7,6 +7,7 @@ pittsburgh/data/pogoh_trips.csv
 __pycache__/
 *.pyc
 *.pyo
+test.py
 
 # OS
 .DS_Store
