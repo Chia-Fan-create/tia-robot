@@ -98,6 +98,29 @@ def analyze():
 
         # ── GTFS charts ───────────────────────────────────────────────────────
         if GTFS_OK:
+            # Compute stop/route counts for the summary cards
+            from utils.charts import filter_by_radius
+            stops_in = filter_by_radius(
+                GTFS["stops"].dropna(subset=["stop_lat", "stop_lon"]),
+                lat, lon, radius
+            )
+            stop_count = len(stops_in)
+
+            # Route count: join stop_times → trips → routes
+            if not stops_in.empty:
+                st_ids    = set(stops_in["stop_id"])
+                st_trips  = GTFS["stop_times"][GTFS["stop_times"]["stop_id"].isin(st_ids)]
+                trip_ids  = set(st_trips["trip_id"])
+                trip_rows = GTFS["trips"][GTFS["trips"]["trip_id"].isin(trip_ids)]
+                route_count = trip_rows["route_id"].nunique()
+            else:
+                route_count = 0
+
+            result["bus_summary"] = {
+                "stops":  stop_count,
+                "routes": route_count,
+            }
+
             result["chart1"] = _b64(chart1_bus_stops(GTFS, lat, lon, radius))
 
             tbl_png, df2 = chart2_table(GTFS, lat, lon, radius)
@@ -113,6 +136,21 @@ def analyze():
 
         # ── POGOH charts (use pre-computed data) ──────────────────────────────
         if POGOH_OK:
+            from utils.charts import filter_by_radius
+            stations_in = filter_by_radius(
+                POGOH_PRE["stations"].dropna(subset=["Latitude", "Longitude"]),
+                lat, lon, radius,
+                lat_col="Latitude", lon_col="Longitude",
+            )
+            pogoh_station_count = len(stations_in)
+            pogoh_total_trips   = int(stations_in["total"].sum()) if not stations_in.empty else 0
+
+            result["pogoh_summary"] = {
+                "stations":   pogoh_station_count,
+                "total_trips": pogoh_total_trips,
+                "data_days":  POGOH_PRE["data_days"],
+            }
+
             result["chart4a"] = _b64(
                 chart4a_pogoh_map(POGOH_PRE, lat, lon, radius)
             )

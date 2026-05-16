@@ -8,516 +8,304 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
-    /* ── Reset & variables ────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --night:    #0B1521;
-      --navy:     #0D1B2A;
-      --navy-mid: #162336;
-      --gold:     #FFB81C;
-      --gold-dim: rgba(255,184,28,0.15);
-      --cream:    #F5F2EE;
-      --white:    #FFFFFF;
-      --muted:    rgba(240,237,232,0.55);
-      --border:   rgba(255,184,28,0.18);
-      --card-bg:  #FFFFFF;
-      --text-dark:#1A1A1A;
-      --sidebar-w: 340px;
+      --navy:      #0D1B2A;
+      --gold:      #FFB81C;
+      --gold-dim:  rgba(255,184,28,0.15);
+      --border:    rgba(255,184,28,0.2);
+      --cream:     #F5F2EE;
+      --muted:     rgba(240,237,232,0.55);
+      --sidebar-w: 420px;
+      --bus-bg:    #0D1B2A;
+      --bus-title: #FFB81C;
+      --pogoh-bg:  #00B2A9;
+      --pogoh-title: #003865;
     }
 
-    html, body {
-      height: 100%;
-      font-family: 'DM Sans', sans-serif;
-      background: var(--cream);
-      color: var(--text-dark);
-    }
+    html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--cream); overflow: hidden; }
 
-    /* ── Layout ───────────────────────────────────────────────────────────── */
-    .layout {
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
+    /* ── Layout ─────────────────────────────────────────────────────────── */
+    .layout { display: flex; height: 100vh; }
 
-    /* ── Sidebar ──────────────────────────────────────────────────────────── */
+    /* ── Sidebar ────────────────────────────────────────────────────────── */
     .sidebar {
-      width: var(--sidebar-w);
-      flex-shrink: 0;
-      background: var(--navy);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
+      width: var(--sidebar-w); flex-shrink: 0;
+      background: var(--navy); position: relative; overflow: hidden;
     }
-
-    /* Pittsburgh photo at bottom of sidebar */
     .sidebar-photo {
-      position: absolute;
-      inset: 0;
+      position: absolute; inset: 0;
       background: url('/static/images/pittsburgh.jpg') center/cover no-repeat;
-      opacity: 0.18;
-      pointer-events: none;
+      opacity: 0.18; pointer-events: none;
     }
-
-    /* Gold vertical accent line */
     .sidebar::before {
-      content: '';
-      position: absolute;
-      top: 0; right: 0;
-      width: 1px;
-      height: 100%;
-      background: linear-gradient(to bottom,
-        transparent 0%,
-        var(--gold) 30%,
-        var(--gold) 70%,
-        transparent 100%);
-      opacity: 0.4;
-      z-index: 2;
+      content: ''; position: absolute; top: 0; right: 0;
+      width: 1px; height: 100%;
+      background: linear-gradient(to bottom, transparent, var(--gold) 30%, var(--gold) 70%, transparent);
+      opacity: 0.4; z-index: 2;
     }
-
     .sidebar-content {
-      position: relative;
-      z-index: 3;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      padding: 36px 28px 28px;
-      overflow-y: auto;
+      position: relative; z-index: 3;
+      display: flex; flex-direction: column;
+      height: 100%; padding: 36px 28px 28px; overflow-y: auto;
     }
+    .sidebar-content::-webkit-scrollbar { width: 4px; }
+    .sidebar-content::-webkit-scrollbar-thumb { background: rgba(255,184,28,0.25); border-radius: 2px; }
 
-    /* ── Brand ────────────────────────────────────────────────────────────── */
-    .brand {
-      margin-bottom: 32px;
-    }
+    /* ── Brand ──────────────────────────────────────────────────────────── */
+    .brand { margin-bottom: 28px; }
+    .brand-eyebrow { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .brand-title { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; line-height: 1.15; color: var(--cream); }
+    .brand-title em { font-style: italic; color: var(--gold); }
+    .brand-sub { margin-top: 10px; font-size: 0.78rem; color: var(--muted); line-height: 1.55; }
+    .divider { height: 1px; background: var(--border); margin: 18px 0; }
 
-    .brand-eyebrow {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.68rem;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 8px;
-    }
-
-    .brand-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.7rem;
-      font-weight: 700;
-      line-height: 1.15;
-      color: var(--cream);
-    }
-
-    .brand-title em {
-      font-style: italic;
-      color: var(--gold);
-    }
-
-    .brand-sub {
-      margin-top: 10px;
-      font-size: 0.78rem;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-
-    /* ── Divider ──────────────────────────────────────────────────────────── */
-    .divider {
-      height: 1px;
-      background: var(--border);
-      margin: 20px 0;
-    }
-
-    /* ── Status pills ─────────────────────────────────────────────────────── */
-    .status-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.7rem;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
-
-    .dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
+    /* ── Status pills ───────────────────────────────────────────────────── */
+    .status-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 500; border: 1px solid var(--border); color: var(--muted); }
+    .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .dot-on  { background: #4ADE80; box-shadow: 0 0 6px #4ADE80; }
     .dot-off { background: #EF4444; }
 
-    /* ── Form labels ──────────────────────────────────────────────────────── */
-    .form-label {
-      display: block;
-      font-size: 0.68rem;
-      font-weight: 500;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 7px;
-    }
-
-    /* ── Coordinate inputs ────────────────────────────────────────────────── */
-    .coord-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 18px;
-    }
-
-    .input-wrap {
-      display: flex;
-      flex-direction: column;
-    }
-
+    /* ── Form elements ──────────────────────────────────────────────────── */
+    .form-label { display: block; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 7px; }
+    .coord-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .input-wrap { display: flex; flex-direction: column; }
     input[type="number"] {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--cream);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.88rem;
-      padding: 9px 11px;
-      width: 100%;
-      transition: border-color 0.2s, background 0.2s;
-      -moz-appearance: textfield;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--cream); font-family: 'DM Sans', sans-serif;
+      font-size: 0.88rem; padding: 9px 11px; width: 100%;
+      -moz-appearance: textfield; transition: border-color 0.2s;
     }
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
-    input[type="number"]:focus {
-      outline: none;
-      border-color: var(--gold);
-      background: rgba(255,184,28,0.07);
-    }
-
-    /* ── Radius ───────────────────────────────────────────────────────────── */
+    input[type="number"]:focus { outline: none; border-color: var(--gold); background: rgba(255,184,28,0.07); }
     .radius-section { margin-bottom: 18px; }
-
-    .radius-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    input[type="range"] {
-      flex: 1;
-      height: 3px;
-      accent-color: var(--gold);
-      cursor: pointer;
-      background: rgba(255,255,255,0.12);
-      border-radius: 2px;
-    }
-
-    .radius-val {
-      font-family: 'Playfair Display', serif;
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--gold);
-      min-width: 58px;
-      text-align: right;
-    }
-
+    .radius-row { display: flex; align-items: center; gap: 10px; }
+    input[type="range"] { flex: 1; height: 3px; accent-color: var(--gold); cursor: pointer; }
+    .radius-val { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: var(--gold); min-width: 58px; text-align: right; }
     .radius-num {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--cream);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.82rem;
-      padding: 6px 8px;
-      width: 72px;
-      text-align: center;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--cream); font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem; padding: 6px 8px; width: 72px; text-align: center;
       -moz-appearance: textfield;
     }
-    .radius-num::-webkit-inner-spin-button,
-    .radius-num::-webkit-outer-spin-button { -webkit-appearance: none; }
-    .radius-num:focus {
-      outline: none;
-      border-color: var(--gold);
-    }
-
-    /* Preset buttons */
-    .presets {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    .preset {
-      font-size: 0.7rem;
-      padding: 3px 10px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: 'DM Sans', sans-serif;
-    }
-    .preset:hover {
-      border-color: var(--gold);
-      color: var(--gold);
-      background: var(--gold-dim);
-    }
-
-    /* ── Quick locations ──────────────────────────────────────────────────── */
+    .radius-num::-webkit-inner-spin-button, .radius-num::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .radius-num:focus { outline: none; border-color: var(--gold); }
+    .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .preset { font-size: 0.7rem; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+    .preset:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
     .locations-section { margin-bottom: 22px; }
+    .loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .loc-btn { padding: 7px 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 0.72rem; font-family: 'DM Sans', sans-serif; cursor: pointer; text-align: left; transition: all 0.15s; line-height: 1.35; }
+    .loc-btn:hover { background: var(--gold-dim); border-color: var(--gold); color: var(--cream); }
+    .loc-btn strong { display: block; font-weight: 500; color: var(--cream); font-size: 0.75rem; margin-bottom: 1px; }
 
-    .loc-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
-
-    .loc-btn {
-      padding: 7px 10px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-family: 'DM Sans', sans-serif;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.15s;
-      line-height: 1.35;
-    }
-    .loc-btn:hover {
-      background: var(--gold-dim);
-      border-color: var(--gold);
-      color: var(--cream);
-    }
-    .loc-btn strong {
-      display: block;
-      font-weight: 500;
-      color: var(--cream);
-      font-size: 0.75rem;
-      margin-bottom: 1px;
-    }
-
-    /* ── Run button ───────────────────────────────────────────────────────── */
-    .run-btn {
-      width: 100%;
-      padding: 13px;
-      background: var(--gold);
-      color: var(--night);
-      border: none;
-      border-radius: 7px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.88rem;
-      font-weight: 500;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
-      margin-top: auto;
-    }
+    /* ── Run button ─────────────────────────────────────────────────────── */
+    .run-btn { width: 100%; padding: 13px; background: var(--gold); color: #0B1521; border: none; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: opacity 0.2s, transform 0.1s; margin-top: auto; }
     .run-btn:hover:not(:disabled) { opacity: 0.88; }
     .run-btn:active:not(:disabled) { transform: scale(0.98); }
-    .run-btn:disabled {
-      background: rgba(255,184,28,0.3);
-      color: rgba(11,21,33,0.5);
-      cursor: not-allowed;
-    }
+    .run-btn:disabled { background: rgba(255,184,28,0.3); color: rgba(11,21,33,0.5); cursor: not-allowed; }
 
-    /* ── Main content area ────────────────────────────────────────────────── */
-    .main {
-      flex: 1;
-      overflow-y: auto;
-      background: var(--cream);
-      padding: 40px 44px;
-    }
-
-    /* ── Welcome / empty state ────────────────────────────────────────────── */
-    .welcome {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 80vh;
-      text-align: center;
-      opacity: 0.45;
-    }
-
-    .welcome-city {
-      font-family: 'Playfair Display', serif;
-      font-size: 5rem;
-      font-weight: 700;
-      color: var(--navy);
-      letter-spacing: -0.03em;
-      line-height: 1;
-      margin-bottom: 16px;
-    }
-
-    .welcome-sub {
-      font-size: 0.9rem;
-      color: var(--navy);
-      max-width: 320px;
-      line-height: 1.6;
-    }
-
-    /* ── Loading ──────────────────────────────────────────────────────────── */
-    .loading {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 60vh;
-      gap: 20px;
-    }
-
-    .spinner-ring {
-      width: 48px; height: 48px;
-      border: 3px solid rgba(255,184,28,0.2);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 0.9s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .loading p {
-      font-size: 0.85rem;
-      color: #888;
-      letter-spacing: 0.04em;
-    }
-
-    /* ── Error banner ─────────────────────────────────────────────────────── */
-    .error-banner {
-      display: none;
-      background: #FFF5F5;
-      border-left: 3px solid #E74C3C;
-      color: #C0392B;
-      padding: 12px 16px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-      margin-bottom: 28px;
-    }
-
-    /* ── Results ──────────────────────────────────────────────────────────── */
-    .results { display: none; }
-
-    /* Section header */
-    .section-head {
-      display: flex;
-      align-items: baseline;
-      gap: 14px;
-      margin-bottom: 16px;
-      margin-top: 44px;
-    }
-    .section-head:first-child { margin-top: 0; }
-
-    .section-num {
-      font-family: 'Playfair Display', serif;
-      font-size: 0.75rem;
-      font-weight: 400;
-      color: #AAA;
-      letter-spacing: 0.1em;
-      flex-shrink: 0;
-    }
-
-    .section-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--navy);
-    }
-
-    .dl-group {
-      margin-left: auto;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .dl-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px 12px;
-      font-size: 0.72rem;
-      font-weight: 500;
-      font-family: 'DM Sans', sans-serif;
-      border-radius: 5px;
-      border: none;
-      cursor: pointer;
-      text-decoration: none;
-      letter-spacing: 0.03em;
-      transition: opacity 0.15s;
-    }
-    .dl-btn:hover { opacity: 0.78; }
-    .dl-btn-png {
-      background: #EBF4FF;
-      color: #2B6CB0;
-    }
-    .dl-btn-csv {
-      background: #E6FFED;
-      color: #276749;
-    }
-
-    /* Chart card */
-    .chart-card {
-      background: var(--card-bg);
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
-      margin-bottom: 8px;
-    }
-
-    .chart-card img {
-      width: 100%;
-      display: block;
-    }
-
-    /* Data warning */
-    .data-warn {
-      background: #FFFBEB;
-      border-left: 3px solid #F6E05E;
-      color: #744210;
-      padding: 12px 16px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-    }
-
-    /* ── Scrollbar styling ────────────────────────────────────────────────── */
+    /* ── Main area ──────────────────────────────────────────────────────── */
+    .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
     .main::-webkit-scrollbar { width: 6px; }
-    .main::-webkit-scrollbar-track { background: transparent; }
     .main::-webkit-scrollbar-thumb { background: #CCC; border-radius: 3px; }
 
-    .sidebar-content::-webkit-scrollbar { width: 4px; }
-    .sidebar-content::-webkit-scrollbar-track { background: transparent; }
-    .sidebar-content::-webkit-scrollbar-thumb { background: rgba(255,184,28,0.25); border-radius: 2px; }
+    /* ── Welcome ────────────────────────────────────────────────────────── */
+    .welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; opacity: 0.4; padding: 40px; }
+    .welcome-city { font-family: 'Playfair Display', serif; font-size: 5rem; font-weight: 700; color: var(--navy); letter-spacing: -0.03em; line-height: 1; margin-bottom: 16px; }
+    .welcome-sub { font-size: 0.9rem; color: var(--navy); max-width: 320px; line-height: 1.6; }
+
+    /* ── Loading ────────────────────────────────────────────────────────── */
+    .loading { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+    .spinner-ring { width: 48px; height: 48px; border: 3px solid rgba(255,184,28,0.2); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading p { font-size: 0.85rem; color: #888; letter-spacing: 0.04em; }
+
+    /* ── Error ──────────────────────────────────────────────────────────── */
+    .error-banner { display: none; background: #FFF5F5; border-left: 3px solid #E74C3C; color: #C0392B; padding: 12px 16px; font-size: 0.85rem; margin: 20px; border-radius: 4px; }
+
+    /* ══════════════════════════════════════════════════════════════════════
+       RESULTS — two fullscreen hero blocks → shrink to header bars
+       ══════════════════════════════════════════════════════════════════ */
+    .results { display: none; flex-direction: column; flex: 1; min-height: 0; }
+
+    /* ── Hero split: Bus & POGOH side-by-side, full viewport height ─────── */
+    .hero-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: 100vh;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      pointer-events: none; /* panels below should receive clicks normally */
+    }
+
+    /* Individual hero panel */
+    .hero-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: height 0.55s cubic-bezier(0.4,0,0.2,1);
+      height: 100vh;
+      pointer-events: all;
+    }
+    .hero-panel.bus   { background: var(--bus-bg); }
+    .hero-panel.pogoh { background: var(--pogoh-bg); }
+
+    /* Collapsed state — thin header bar */
+    .hero-panel.collapsed {
+      height: 72px;
+      justify-content: center;
+    }
+
+    /* Hero content (full state) */
+    .hero-body {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0; text-align: center;
+      transition: opacity 0.3s;
+      padding: 40px;
+    }
+    .hero-panel.collapsed .hero-body { display: none; }
+
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 700; line-height: 1.1; margin-bottom: 28px;
+    }
+    .hero-panel.bus   .hero-title { color: var(--bus-title); }
+    .hero-panel.pogoh .hero-title { color: var(--pogoh-title); }
+
+    .hero-stats { display: flex; gap: 48px; margin-bottom: 36px; }
+    .hero-stat { display: flex; flex-direction: column; align-items: center; }
+    .hero-stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 5vw, 4.5rem);
+      font-weight: 700; line-height: 1;
+    }
+    .hero-panel.bus   .hero-stat-num { color: var(--bus-title); }
+    .hero-panel.pogoh .hero-stat-num { color: var(--pogoh-title); }
+
+    .hero-stat-label {
+      font-size: 0.72rem; font-weight: 500; letter-spacing: 0.12em;
+      text-transform: uppercase; margin-top: 6px;
+    }
+    .hero-panel.bus   .hero-stat-label { color: rgba(240,237,232,0.55); }
+    .hero-panel.pogoh .hero-stat-label { color: rgba(0,56,101,0.65); }
+
+    .hero-cta {
+      font-size: 0.78rem; font-weight: 500; letter-spacing: 0.1em;
+      text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+      transition: gap 0.2s;
+    }
+    .hero-panel.bus   .hero-cta { color: rgba(240,237,232,0.5); }
+    .hero-panel.pogoh .hero-cta { color: rgba(0,56,101,0.55); }
+    .hero-panel:hover .hero-cta { gap: 14px; }
+
+    /* Collapsed bar content */
+    .hero-bar {
+      display: none;
+      align-items: center; justify-content: space-between;
+      width: 100%; padding: 0 28px;
+    }
+    .hero-panel.collapsed .hero-bar { display: flex; }
+
+    .hero-bar-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem; font-weight: 700;
+    }
+    .hero-panel.bus   .hero-bar-title { color: var(--bus-title); }
+    .hero-panel.pogoh .hero-bar-title { color: var(--pogoh-title); }
+
+    .hero-bar-stats {
+      display: flex; gap: 20px; font-size: 0.75rem; font-weight: 500;
+    }
+    .hero-panel.bus   .hero-bar-stats { color: rgba(240,237,232,0.6); }
+    .hero-panel.pogoh .hero-bar-stats { color: rgba(0,56,101,0.65); }
+
+    .hero-bar-stats strong {
+      font-family: 'Playfair Display', serif; font-size: 1rem;
+      margin-right: 4px;
+    }
+    .hero-panel.bus   .hero-bar-stats strong { color: var(--bus-title); }
+    .hero-panel.pogoh .hero-bar-stats strong { color: var(--pogoh-title); }
+
+    .hero-bar-cta {
+      font-size: 0.7rem; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; display: flex; align-items: center; gap: 6px;
+    }
+    .hero-panel.bus   .hero-bar-cta { color: rgba(240,237,232,0.45); }
+    .hero-panel.pogoh .hero-bar-cta { color: rgba(0,56,101,0.5); }
+
+    /* Arrow rotates when open */
+    .hero-arrow { font-size: 1rem; transition: transform 0.35s; display: inline-block; }
+    .hero-panel.expanded .hero-arrow { transform: rotate(90deg); }
+
+    /* Divider between the two hero panels */
+    .hero-panel.bus::after {
+      content: ''; position: absolute; right: 0; top: 15%; bottom: 15%;
+      width: 1px; background: rgba(255,255,255,0.1);
+    }
+
+    /* ── Chart sections (below hero, full width) ───────────────────────── */
+    .chart-section-wrap {
+      display: none;
+      background: var(--cream);
+    }
+    .chart-section-wrap.visible { display: block; }
+
+    /* Sticky colored label showing which category */
+    .chart-section-label {
+      position: sticky; top: 0; z-index: 5;
+      padding: 14px 44px;
+      font-family: 'Playfair Display', serif;
+      font-size: 0.85rem; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .chart-section-label.bus   { background: var(--bus-bg);   color: var(--bus-title); }
+    .chart-section-label.pogoh { background: var(--pogoh-bg); color: var(--pogoh-title); }
+
+    .chart-section-inner { padding: 36px 44px 48px; }
+
+    /* Section headings */
+    .section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; margin-top: 36px; }
+    .section-head:first-child { margin-top: 0; }
+    .section-num { font-family: 'Playfair Display', serif; font-size: 0.75rem; color: #AAA; letter-spacing: 0.1em; flex-shrink: 0; }
+    .section-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; color: var(--navy); }
+    .dl-group { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .dl-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; font-size: 0.72rem; font-weight: 500; font-family: 'DM Sans', sans-serif; border-radius: 5px; border: none; cursor: pointer; text-decoration: none; transition: opacity 0.15s; }
+    .dl-btn:hover { opacity: 0.78; }
+    .dl-btn-png { background: #EBF4FF; color: #2B6CB0; }
+    .dl-btn-csv { background: #E6FFED; color: #276749; }
+
+    .chart-card { background: #FFF; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05); margin-bottom: 8px; }
+    .chart-card img { width: 100%; display: block; }
+    .data-warn { background: #FFFBEB; border-left: 3px solid #F6E05E; color: #744210; padding: 12px 16px; border-radius: 4px; font-size: 0.85rem; }
   </style>
 </head>
 <body>
-
 <div class="layout">
 
-  <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
+  <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
   <aside class="sidebar">
     <div class="sidebar-photo"></div>
-
     <div class="sidebar-content">
 
-      <!-- Brand -->
       <div class="brand">
-        <div class="brand-eyebrow">Transit Intelligence Analyzer</div>
+        <div class="brand-eyebrow">Traffic Impact Assessment</div>
         <h1 class="brand-title">TIA Robot<br><em>Pittsburgh</em></h1>
         <p class="brand-sub">Bus stops · Routes · Service frequency<br>POGOH bike share analytics</p>
       </div>
 
-      <!-- Status -->
       <div class="status-row">
         <span class="status-pill">
           <span class="dot {{ 'dot-on' if gtfs_ok else 'dot-off' }}"></span>
@@ -531,34 +319,30 @@
 
       <div class="divider"></div>
 
-      <!-- Coordinates -->
-      <div style="margin-bottom: 18px;">
+      <div style="margin-bottom:18px">
         <div class="form-label">Coordinates</div>
         <div class="coord-grid">
           <div class="input-wrap">
-            <label class="form-label" style="font-size:0.62rem; margin-bottom:5px;">Latitude</label>
-            <input type="number" id="lat" step="0.000001" value="40.4417" placeholder="40.4417">
+            <label class="form-label" style="font-size:.62rem;margin-bottom:5px">Latitude</label>
+            <input type="number" id="lat" step="0.000001" value="40.4417">
           </div>
           <div class="input-wrap">
-            <label class="form-label" style="font-size:0.62rem; margin-bottom:5px;">Longitude</label>
-            <input type="number" id="lon" step="0.000001" value="-79.9581" placeholder="-79.9581">
+            <label class="form-label" style="font-size:.62rem;margin-bottom:5px">Longitude</label>
+            <input type="number" id="lon" step="0.000001" value="-79.9581">
           </div>
         </div>
       </div>
 
-      <!-- Radius -->
       <div class="radius-section">
         <div class="form-label">Search Radius</div>
         <div class="radius-row">
-          <input type="range" id="radius-slider" min="50" max="2000" step="50" value="300"
-                 oninput="syncRadius(this.value)">
+          <input type="range" id="radius-slider" min="50" max="2000" step="50" value="300" oninput="syncRadius(this.value)">
           <span class="radius-val" id="radius-display">300 m</span>
         </div>
-        <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-          <span style="font-size:0.7rem; color:var(--muted);">Custom:</span>
-          <input type="number" class="radius-num" id="radius-input" min="50" max="5000"
-                 value="300" oninput="syncRadius(this.value)">
-          <span style="font-size:0.7rem; color:var(--muted);">m</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+          <span style="font-size:.7rem;color:var(--muted)">Custom:</span>
+          <input type="number" class="radius-num" id="radius-input" min="50" max="5000" value="300" oninput="syncRadius(this.value)">
+          <span style="font-size:.7rem;color:var(--muted)">m</span>
         </div>
         <div class="presets">
           <button class="preset" onclick="setRadius(100)">100 m</button>
@@ -571,42 +355,29 @@
 
       <div class="divider"></div>
 
-      <!-- Quick locations -->
       <div class="locations-section">
         <div class="form-label">Quick Locations</div>
         <div class="loc-grid">
-          <button class="loc-btn" onclick="setCoords(40.4417,-79.9581)">
-            <strong>Downtown</strong>40.4417, -79.9581
-          </button>
-          <button class="loc-btn" onclick="setCoords(40.4441,-79.9602)">
-            <strong>Oakland / CMU</strong>40.4441, -79.9602
-          </button>
-          <button class="loc-btn" onclick="setCoords(40.4561,-79.9163)">
-            <strong>East Liberty</strong>40.4561, -79.9163
-          </button>
-          <button class="loc-btn" onclick="setCoords(40.4285,-80.0025)">
-            <strong>South Side</strong>40.4285, -80.0025
-          </button>
+          <button class="loc-btn" onclick="setCoords(40.4417,-79.9581)"><strong>Downtown</strong>40.4417, -79.9581</button>
+          <button class="loc-btn" onclick="setCoords(40.4441,-79.9602)"><strong>Oakland / CMU</strong>40.4441, -79.9602</button>
+          <button class="loc-btn" onclick="setCoords(40.4561,-79.9163)"><strong>East Liberty</strong>40.4561, -79.9163</button>
+          <button class="loc-btn" onclick="setCoords(40.4285,-80.0025)"><strong>South Side</strong>40.4285, -80.0025</button>
         </div>
       </div>
 
-      <div style="flex:1;"></div>
+      <div style="flex:1"></div>
+      <button class="run-btn" id="run-btn" onclick="runAnalysis()">Run Analysis</button>
 
-      <!-- Run button -->
-      <button class="run-btn" id="run-btn" onclick="runAnalysis()">
-        Run Analysis
-      </button>
-
-    </div><!-- /sidebar-content -->
+    </div>
   </aside>
 
-  <!-- ── Main ──────────────────────────────────────────────────────────── -->
-  <main class="main">
+  <!-- ── Main ─────────────────────────────────────────────────────────── -->
+  <main class="main" id="main-area">
 
-    <!-- Welcome state -->
+    <!-- Welcome -->
     <div class="welcome" id="welcome">
       <div class="welcome-city">Pittsburgh</div>
-      <p class="welcome-sub">Enter coordinates and a search radius, then run the analysis to explore transit data.</p>
+      <p class="welcome-sub">Enter coordinates and a search radius,<br>then run the analysis to explore transit data.</p>
     </div>
 
     <!-- Loading -->
@@ -621,93 +392,158 @@
     <!-- Results -->
     <div class="results" id="results">
 
-      <!-- Chart 1 -->
-      <div class="section-head">
-        <span class="section-num">01</span>
-        <span class="section-title">Bus Stop Locations</span>
-        <div class="dl-group">
-          <a id="dl1" class="dl-btn dl-btn-png" download="bus_stops.png">⬇ PNG</a>
-        </div>
-      </div>
-      <div class="chart-card"><div id="chart1-content"></div></div>
+      <!-- Hero split: two fullscreen panels -->
+      <div class="hero-split" id="hero-split">
 
-      <!-- Chart 2a -->
-      <div class="section-head">
-        <span class="section-num">02</span>
-        <span class="section-title">Routes — Table</span>
-        <div class="dl-group">
-          <a id="dl2-table-png" class="dl-btn dl-btn-png" download="routes_table.png">⬇ PNG</a>
-          <a id="dl2-csv" class="dl-btn dl-btn-csv" download="routes.csv">⬇ CSV</a>
+        <!-- Bus hero panel -->
+        <div class="hero-panel bus" id="bus-hero" onclick="toggleHero('bus')">
+          <!-- Full state -->
+          <div class="hero-body">
+            <div class="hero-title">Bus Transit</div>
+            <div class="hero-stats">
+              <div class="hero-stat">
+                <span class="hero-stat-num" id="bus-stop-count">—</span>
+                <span class="hero-stat-label">Stops</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-stat-num" id="bus-route-count">—</span>
+                <span class="hero-stat-label">Routes</span>
+              </div>
+            </div>
+            <div class="hero-cta">Explore data <span class="hero-arrow">›</span></div>
+          </div>
+          <!-- Collapsed bar state -->
+          <div class="hero-bar">
+            <span class="hero-bar-title">Bus Transit</span>
+            <div class="hero-bar-stats">
+              <span><strong id="bus-stop-count-bar">—</strong> Stops</span>
+              <span><strong id="bus-route-count-bar">—</strong> Routes</span>
+            </div>
+            <span class="hero-bar-cta">collapse <span class="hero-arrow">›</span></span>
+          </div>
         </div>
-      </div>
-      <div class="chart-card"><div id="chart2-table-content"></div></div>
 
-      <!-- Chart 2b -->
-      <div class="section-head">
-        <span class="section-num">02</span>
-        <span class="section-title">Routes — Map</span>
-        <div class="dl-group">
-          <a id="dl2-map-png" class="dl-btn dl-btn-png" download="routes_map.png">⬇ PNG</a>
+        <!-- POGOH hero panel -->
+        <div class="hero-panel pogoh" id="pogoh-hero" onclick="toggleHero('pogoh')">
+          <!-- Full state -->
+          <div class="hero-body">
+            <div class="hero-title">POGOH Bike Share</div>
+            <div class="hero-stats">
+              <div class="hero-stat">
+                <span class="hero-stat-num" id="pogoh-station-count">—</span>
+                <span class="hero-stat-label">Stations</span>
+              </div>
+              <div class="hero-stat">
+                <span class="hero-stat-num" id="pogoh-trip-count">—</span>
+                <span class="hero-stat-label">Total Trips</span>
+              </div>
+            </div>
+            <div class="hero-cta">Explore data <span class="hero-arrow">›</span></div>
+          </div>
+          <!-- Collapsed bar state -->
+          <div class="hero-bar">
+            <span class="hero-bar-title">POGOH Bike Share</span>
+            <div class="hero-bar-stats">
+              <span><strong id="pogoh-station-count-bar">—</strong> Stations</span>
+              <span><strong id="pogoh-trip-count-bar">—</strong> Trips</span>
+            </div>
+            <span class="hero-bar-cta">collapse <span class="hero-arrow">›</span></span>
+          </div>
         </div>
-      </div>
-      <div class="chart-card"><div id="chart2-map-content"></div></div>
 
-      <!-- Chart 3 -->
-      <div class="section-head">
-        <span class="section-num">03</span>
-        <span class="section-title">Service Frequency &amp; Operating Hours</span>
-        <div class="dl-group">
-          <a id="dl3-png" class="dl-btn dl-btn-png" download="schedule.png">⬇ PNG</a>
-          <a id="dl3-csv" class="dl-btn dl-btn-csv" download="schedule.csv">⬇ CSV</a>
-        </div>
-      </div>
-      <div class="chart-card"><div id="chart3-content"></div></div>
+      </div><!-- /hero-split -->
 
-      <!-- Chart 4a -->
-      <div class="section-head">
-        <span class="section-num">04</span>
-        <span class="section-title">POGOH Station Locations</span>
-        <div class="dl-group">
-          <a id="dl4a" class="dl-btn dl-btn-png" download="pogoh_map.png">⬇ PNG</a>
-        </div>
-      </div>
-      <div class="chart-card"><div id="chart4a-content"></div></div>
+      <!-- Chart sections (shown below hero when expanded) -->
 
-      <!-- Chart 4b -->
-      <div class="section-head">
-        <span class="section-num">04</span>
-        <span class="section-title">POGOH Hourly Turnover Rate</span>
-        <div class="dl-group">
-          <a id="dl4b-png" class="dl-btn dl-btn-png" download="pogoh_turnover.png">⬇ PNG</a>
-          <a id="dl4b-csv" class="dl-btn dl-btn-csv" download="pogoh_turnover.csv">⬇ CSV</a>
-        </div>
-      </div>
-      <div class="chart-card"><div id="chart4b-content"></div></div>
+      <!-- Bus charts -->
+      <div class="chart-section-wrap" id="bus-charts">
+        <div class="chart-section-label bus">Bus Transit — Charts</div>
+        <div class="chart-section-inner">
 
-      <!-- Chart 4c -->
-      <div class="section-head">
-        <span class="section-num">04</span>
-        <span class="section-title">POGOH Supply / Demand Balance</span>
-        <div class="dl-group">
-          <a id="dl4c-png" class="dl-btn dl-btn-png" download="pogoh_balance.png">⬇ PNG</a>
-          <a id="dl4c-csv" class="dl-btn dl-btn-csv" download="pogoh_balance.csv">⬇ CSV</a>
+          <div class="section-head">
+            <span class="section-num">01</span>
+            <span class="section-title">Bus Stop Locations</span>
+            <div class="dl-group"><a id="dl1" class="dl-btn dl-btn-png" download="bus_stops.png">⬇ PNG</a></div>
+          </div>
+          <div class="chart-card"><div id="chart1-content"></div></div>
+
+          <div class="section-head">
+            <span class="section-num">02</span>
+            <span class="section-title">Stops &amp; Serving Routes</span>
+            <div class="dl-group">
+              <a id="dl2-table-png" class="dl-btn dl-btn-png" download="routes_table.png">⬇ PNG</a>
+              <a id="dl2-csv" class="dl-btn dl-btn-csv" download="routes.csv">⬇ CSV</a>
+            </div>
+          </div>
+          <div class="chart-card"><div id="chart2-table-content"></div></div>
+
+          <div class="section-head">
+            <span class="section-num">02</span>
+            <span class="section-title">Route Map</span>
+            <div class="dl-group"><a id="dl2-map-png" class="dl-btn dl-btn-png" download="routes_map.png">⬇ PNG</a></div>
+          </div>
+          <div class="chart-card"><div id="chart2-map-content"></div></div>
+
+          <div class="section-head">
+            <span class="section-num">03</span>
+            <span class="section-title">Service Frequency &amp; Operating Hours</span>
+            <div class="dl-group">
+              <a id="dl3-png" class="dl-btn dl-btn-png" download="schedule.png">⬇ PNG</a>
+              <a id="dl3-csv" class="dl-btn dl-btn-csv" download="schedule.csv">⬇ CSV</a>
+            </div>
+          </div>
+          <div class="chart-card"><div id="chart3-content"></div></div>
+
         </div>
       </div>
-      <div class="chart-card"><div id="chart4c-content"></div></div>
+
+      <!-- POGOH charts -->
+      <div class="chart-section-wrap" id="pogoh-charts">
+        <div class="chart-section-label pogoh">POGOH Bike Share — Charts</div>
+        <div class="chart-section-inner">
+
+          <div class="section-head">
+            <span class="section-num">04</span>
+            <span class="section-title">Station Locations</span>
+            <div class="dl-group"><a id="dl4a" class="dl-btn dl-btn-png" download="pogoh_map.png">⬇ PNG</a></div>
+          </div>
+          <div class="chart-card"><div id="chart4a-content"></div></div>
+
+          <div class="section-head">
+            <span class="section-num">04</span>
+            <span class="section-title">Hourly Turnover Rate</span>
+            <div class="dl-group">
+              <a id="dl4b-png" class="dl-btn dl-btn-png" download="pogoh_turnover.png">⬇ PNG</a>
+              <a id="dl4b-csv" class="dl-btn dl-btn-csv" download="pogoh_turnover.csv">⬇ CSV</a>
+            </div>
+          </div>
+          <div class="chart-card"><div id="chart4b-content"></div></div>
+
+          <div class="section-head">
+            <span class="section-num">04</span>
+            <span class="section-title">Supply / Demand Balance</span>
+            <div class="dl-group">
+              <a id="dl4c-png" class="dl-btn dl-btn-png" download="pogoh_balance.png">⬇ PNG</a>
+              <a id="dl4c-csv" class="dl-btn dl-btn-csv" download="pogoh_balance.csv">⬇ CSV</a>
+            </div>
+          </div>
+          <div class="chart-card"><div id="chart4c-content"></div></div>
+
+        </div>
+      </div>
 
     </div><!-- /results -->
   </main>
-
-</div><!-- /layout -->
+</div>
 
 <script>
-  // ── Radius sync ───────────────────────────────────────────────────────────
+  // ── Radius & coords ───────────────────────────────────────────────────
   function syncRadius(val) {
     val = Math.max(50, Math.min(5000, parseInt(val) || 300));
     document.getElementById("radius-slider").value = Math.min(val, 2000);
     document.getElementById("radius-input").value  = val;
-    const disp = val >= 1000 ? (val / 1000).toFixed(1) + " km" : val + " m";
-    document.getElementById("radius-display").textContent = disp;
+    document.getElementById("radius-display").textContent =
+      val >= 1000 ? (val/1000).toFixed(1) + " km" : val + " m";
   }
   function setRadius(v) { syncRadius(v); }
   function setCoords(lat, lon) {
@@ -715,43 +551,79 @@
     document.getElementById("lon").value = lon;
   }
 
-  // ── Download helpers ──────────────────────────────────────────────────────
+  // ── Hero toggle ───────────────────────────────────────────────────────
+  // State: 'full' | 'expanded' | 'collapsed'
+  // expanded = charts visible, hero collapsed to bar
+  // collapsed = charts hidden, hero back to full
+  const heroState = { bus: 'full', pogoh: 'full' };
+
+  function toggleHero(type) {
+    const hero   = document.getElementById(type + '-hero');
+    const charts = document.getElementById(type + '-charts');
+
+    if (heroState[type] === 'full' || heroState[type] === 'collapsed') {
+      // Expand: show charts, collapse hero to bar
+      hero.classList.add('collapsed');
+      hero.classList.remove('expanded');
+      charts.classList.add('visible');
+
+      // When this panel expands, scroll down to charts
+      setTimeout(() => {
+        charts.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      heroState[type] = 'expanded';
+    } else {
+      // Collapse: hide charts, restore hero to full
+      hero.classList.remove('collapsed');
+      hero.classList.add('expanded');
+      charts.classList.remove('visible');
+      heroState[type] = 'collapsed';
+
+      // Restore full height by removing expanded class after small delay
+      setTimeout(() => hero.classList.remove('expanded'), 50);
+    }
+  }
+
+  // ── Download helpers ──────────────────────────────────────────────────
   function setDownload(id, uri, filename) {
     const el = document.getElementById(id);
     if (!el || !uri) return;
-    el.href     = uri;
-    el.download = filename;
-    el.style.display = "";
+    el.href = uri; el.download = filename; el.style.display = "";
   }
-  function setImg(contentId, uri) {
+  function setImg(id, uri) {
     if (!uri) return;
-    document.getElementById(contentId).innerHTML =
-      `<img src="${uri}" alt="chart">`;
+    document.getElementById(id).innerHTML = `<img src="${uri}" alt="chart">`;
   }
-  function setWarn(contentId, msg) {
-    document.getElementById(contentId).innerHTML =
-      `<div class="data-warn">⚠ ${msg}</div>`;
+  function setWarn(id, msg) {
+    document.getElementById(id).innerHTML = `<div class="data-warn">⚠ ${msg}</div>`;
   }
 
-  // ── Analysis ──────────────────────────────────────────────────────────────
+  // ── Main analysis ─────────────────────────────────────────────────────
   async function runAnalysis() {
     const lat    = parseFloat(document.getElementById("lat").value);
     const lon    = parseFloat(document.getElementById("lon").value);
     const radius = parseInt(document.getElementById("radius-input").value) || 300;
 
-    if (isNaN(lat) || isNaN(lon)) {
-      showError("Please enter valid latitude and longitude.");
-      return;
-    }
+    if (isNaN(lat) || isNaN(lon)) { showError("Please enter valid coordinates."); return; }
 
-    // UI: hide welcome, show loading
-    document.getElementById("welcome").style.display    = "none";
-    document.getElementById("loading").style.display    = "flex";
-    document.getElementById("results").style.display    = "none";
+    // Reset state
+    heroState.bus   = 'full';
+    heroState.pogoh = 'full';
+    ["bus-hero","pogoh-hero"].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove("collapsed","expanded");
+    });
+    ["bus-charts","pogoh-charts"].forEach(id =>
+      document.getElementById(id).classList.remove("visible")
+    );
+
+    document.getElementById("welcome").style.display      = "none";
+    document.getElementById("loading").style.display      = "flex";
+    document.getElementById("results").style.display      = "none";
     document.getElementById("error-banner").style.display = "none";
-    document.getElementById("run-btn").disabled         = true;
+    document.getElementById("run-btn").disabled           = true;
 
-    // Hide all download buttons
+    // Hide download buttons
     ["dl1","dl2-table-png","dl2-map-png","dl2-csv","dl3-png","dl3-csv",
      "dl4a","dl4b-png","dl4b-csv","dl4c-png","dl4c-csv"].forEach(id => {
       const el = document.getElementById(id);
@@ -760,35 +632,48 @@
 
     try {
       const resp = await fetch("/analyze", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ lat, lon, radius }),
+        body: JSON.stringify({ lat, lon, radius }),
       });
       const data = await resp.json();
-
       if (!resp.ok) { showError(data.error || "Server error"); return; }
 
-      // Populate charts
-      if (data.chart1) { setImg("chart1-content", data.chart1); setDownload("dl1", data.chart1, "bus_stops.png"); }
-      if (data.chart2_table) { setImg("chart2-table-content", data.chart2_table); setDownload("dl2-table-png", data.chart2_table, "routes_table.png"); }
-      if (data.chart2_map)   { setImg("chart2-map-content",   data.chart2_map);   setDownload("dl2-map-png",   data.chart2_map,   "routes_map.png"); }
-      if (data.chart2_csv)     setDownload("dl2-csv",    data.chart2_csv,    "routes.csv");
-      if (data.chart3)       { setImg("chart3-content",  data.chart3);        setDownload("dl3-png",       data.chart3,       "schedule.png"); }
-      if (data.chart3_csv)     setDownload("dl3-csv",    data.chart3_csv,    "schedule.csv");
-      if (data.chart4a)      { setImg("chart4a-content", data.chart4a);       setDownload("dl4a",          data.chart4a,      "pogoh_map.png"); }
-      if (data.chart4b)      { setImg("chart4b-content", data.chart4b);       setDownload("dl4b-png",      data.chart4b,      "pogoh_turnover.png"); }
-      if (data.chart4b_csv)    setDownload("dl4b-csv",   data.chart4b_csv,   "pogoh_turnover.csv");
-      if (data.chart4c)      { setImg("chart4c-content", data.chart4c);       setDownload("dl4c-png",      data.chart4c,      "pogoh_balance.png"); }
-      if (data.chart4c_csv)    setDownload("dl4c-csv",   data.chart4c_csv,   "pogoh_balance.csv");
-
-      if (data.gtfs_error)  setWarn("chart1-content", data.gtfs_error);
-      if (data.pogoh_error) {
-        ["chart4a-content","chart4b-content","chart4c-content"]
-          .forEach(id => setWarn(id, data.pogoh_error));
+      // Fill summary numbers in both full and bar states
+      if (data.bus_summary) {
+        const s = data.bus_summary.stops, r = data.bus_summary.routes;
+        document.getElementById("bus-stop-count").textContent     = s;
+        document.getElementById("bus-route-count").textContent    = r;
+        document.getElementById("bus-stop-count-bar").textContent = s;
+        document.getElementById("bus-route-count-bar").textContent = r;
+      }
+      if (data.pogoh_summary) {
+        const st = data.pogoh_summary.stations;
+        const tr = data.pogoh_summary.total_trips.toLocaleString();
+        document.getElementById("pogoh-station-count").textContent     = st;
+        document.getElementById("pogoh-trip-count").textContent        = tr;
+        document.getElementById("pogoh-station-count-bar").textContent = st;
+        document.getElementById("pogoh-trip-count-bar").textContent    = tr;
       }
 
-      document.getElementById("results").style.display = "block";
-      document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+      // Charts
+      if (data.chart1)       { setImg("chart1-content",       data.chart1);       setDownload("dl1",           data.chart1,       "bus_stops.png"); }
+      if (data.chart2_table) { setImg("chart2-table-content", data.chart2_table); setDownload("dl2-table-png", data.chart2_table, "routes_table.png"); }
+      if (data.chart2_map)   { setImg("chart2-map-content",   data.chart2_map);   setDownload("dl2-map-png",   data.chart2_map,   "routes_map.png"); }
+      if (data.chart2_csv)     setDownload("dl2-csv",   data.chart2_csv,   "routes.csv");
+      if (data.chart3)       { setImg("chart3-content",       data.chart3);       setDownload("dl3-png",       data.chart3,       "schedule.png"); }
+      if (data.chart3_csv)     setDownload("dl3-csv",   data.chart3_csv,   "schedule.csv");
+      if (data.chart4a)      { setImg("chart4a-content",      data.chart4a);      setDownload("dl4a",          data.chart4a,      "pogoh_map.png"); }
+      if (data.chart4b)      { setImg("chart4b-content",      data.chart4b);      setDownload("dl4b-png",      data.chart4b,      "pogoh_turnover.png"); }
+      if (data.chart4b_csv)    setDownload("dl4b-csv",  data.chart4b_csv,  "pogoh_turnover.csv");
+      if (data.chart4c)      { setImg("chart4c-content",      data.chart4c);      setDownload("dl4c-png",      data.chart4c,      "pogoh_balance.png"); }
+      if (data.chart4c_csv)    setDownload("dl4c-csv",  data.chart4c_csv,  "pogoh_balance.csv");
+
+      if (data.gtfs_error)  setWarn("chart1-content", data.gtfs_error);
+      if (data.pogoh_error) ["chart4a-content","chart4b-content","chart4c-content"]
+                              .forEach(id => setWarn(id, data.pogoh_error));
+
+      document.getElementById("results").style.display = "flex";
 
     } catch (err) {
       showError("Network error: " + err.message);
@@ -800,15 +685,12 @@
 
   function showError(msg) {
     const el = document.getElementById("error-banner");
-    el.textContent   = "✕ " + msg;
-    el.style.display = "block";
+    el.textContent = "✕ " + msg; el.style.display = "block";
     document.getElementById("loading").style.display = "none";
   }
 
-  // Enter key shortcut
   document.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !document.getElementById("run-btn").disabled)
-      runAnalysis();
+    if (e.key === "Enter" && !document.getElementById("run-btn").disabled) runAnalysis();
   });
 </script>
 </body>

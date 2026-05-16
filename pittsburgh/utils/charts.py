@@ -171,7 +171,7 @@ def _fallback_limits(ax, lon, lat, radius_m):
 
 # ── Bus icon helper ───────────────────────────────────────────────────────────
 
-def _load_bus_icon(zoom=0.055):
+def _load_bus_icon(zoom=0.032):
     """
     Load bus.png and return a matplotlib OffsetImage.
     Uses zoom on the original 512px image instead of resizing,
@@ -188,7 +188,7 @@ def _load_bus_icon(zoom=0.055):
         return None
 
 
-def _place_bus_icons(ax, xs, ys, zoom=0.055):
+def _place_bus_icons(ax, xs, ys, zoom=0.032):
     """
     Place a bus icon at each (x, y) position on ax.
     Falls back to a simple scatter dot if icon is unavailable.
@@ -284,12 +284,13 @@ def chart1_bus_stops(gtfs, lat, lon, radius_m):
     return _fig_to_bytes(fig)
 
 
-# ── Chart 2: Routes — TABLE (separate image) ──────────────────────────────────
+# ── Chart 2: Routes — STOP×ROUTE TABLE (separate image) ─────────────────────
 
 def chart2_table(gtfs, lat, lon, radius_m):
     """
     Returns (table_png_bytes, csv_df).
-    Table lists all routes serving the study area. No map.
+    Table shows each bus stop in range with the routes that serve it,
+    the direction of each route, and the stop's distance from the center point.
     """
     stops_in = filter_by_radius(
         gtfs["stops"].dropna(subset=["stop_lat", "stop_lon"]),
@@ -298,53 +299,138 @@ def chart2_table(gtfs, lat, lon, radius_m):
     if stops_in.empty:
         return _empty_chart("No bus stops in range — cannot determine routes"), pd.DataFrame()
 
-    stop_ids  = set(stops_in["stop_id"])
-    st        = gtfs["stop_times"][gtfs["stop_times"]["stop_id"].isin(stop_ids)]
-    trip_ids  = set(st["trip_id"])
-    trips     = gtfs["trips"][gtfs["trips"]["trip_id"].isin(trip_ids)]
-    route_ids = set(trips["route_id"])
-    routes    = gtfs["routes"][gtfs["routes"]["route_id"].isin(route_ids)].copy()
+    stop_ids = set(stops_in["stop_id"])
 
-    if routes.empty:
-        return _empty_chart("No routes found serving this area"), pd.DataFrame()
+    # Join stop_times → trips → routes to get routes per stop
+    st = gtfs["stop_times"][gtfs["stop_times"]["stop_id"].isin(stop_ids)][
+        ["trip_id", "stop_id"]
+    ].drop_duplicates()
 
-    routes = routes.sort_values("route_short_name").reset_index(drop=True)
-    n      = len(routes)
+    trips_slim = gtfs["trips"][["trip_id", "route_id", "direction_id"]].drop_duplicates()
+    st = st.merge(trips_slim, on="trip_id")
 
-    # Dynamic figure height so each row has room; min 4 inches
-    row_h  = 0.38
+    routes_slim = gtfs["routes"][["route_id", "route_short_name"]].drop_duplicates()
+    st = st.merge(routes_slim, on="route_id")
+
+    # Direction label: GTFS direction_id 0 = Outbound, 1 = Inbound
+    dir_map = {"0": "Outbound", "1": "Inbound", "": ""}
+    st["dir_label"] = st["direction_id"].fillna("").map(
+        lambda v: dir_map.get(str(v).strip(), str(v))
+    )
+
+    # Build "Route (Direction)" tag per stop
+    st["route_dir"] = st["route_short_name"] + " (" + st["dir_label"] + ")"
+
+    # Aggregate: one row per stop, routes sorted and joined
+    stop_routes = (
+        st.groupby("stop_id")["route_dir"]
+        .apply(lambda x: "  ·  ".join(sorted(set(x))))
+        .reset_index()
+        .rename(columns={"route_dir": "routes"})
+    )
+
+    # Merge with stop info + distance
+    table_df = (
+        stops_in[["stop_id", "stop_name", "dist_m"]]
+        .merge(stop_routes, on="stop_id", how="left")
+        .sort_values("dist_m")
+        .reset_index(drop=True)
+    )
+    table_df["dist_m"] = table_df["dist_m"].round(0).astype(int).astype(str) + " m"
+    table_df["stop_name"] = table_df["stop_name"].fillna("(unnamed)")
+    table_df["routes"]    = table_df["routes"].fillna("—")
+
+    n = len(table_df)
+
+    # Color tags for each unique route short name
+    all_routes_sorted = sorted(
+        st["route_short_name"].dropna().unique(),
+        key=lambda x: (x.isdigit() is False, x)
+    )
+    route_color_map = {r: ROUTE_COLORS[i % len(ROUTE_COLORS)]
+                       for i, r in enumerate(all_routes_sorted)}
+
+    # Build figure: one row per stop
+    row_h  = 0.52
     fig_h  = max(4.0, n * row_h + 1.8)
-    fig, ax = plt.subplots(figsize=(7, fig_h))
+    fig, ax = plt.subplots(figsize=(13, fig_h))
     ax.axis("off")
 
-    table_data = [
-        [str(r.get("route_short_name", "")), str(r.get("route_long_name", ""))]
-        for _, r in routes.iterrows()
+    col_labels  = ["Stop Name", "Distance", "Routes & Direction"]
+    col_widths  = [0.35, 0.10, 0.55]
+    table_data  = [
+        [row["stop_name"], row["dist_m"], ""]   # route col rendered manually
+        for _, row in table_df.iterrows()
     ]
+
     tbl = ax.table(
         cellText=table_data,
-        colLabels=["Route", "Name"],
+        colLabels=col_labels,
+        colWidths=col_widths,
         loc="center",
         cellLoc="left",
     )
     tbl.auto_set_font_size(False)
-    tbl.set_fontsize(9)
-    tbl.scale(1, 1.5)
+    tbl.set_fontsize(8.5)
+    tbl.scale(1, 1.6)
 
+    # Style header and alternating rows
     for (row, col), cell in tbl.get_celld().items():
         if row == 0:
-            cell.set_facecolor(BLUE)
+            cell.set_facecolor("#1A365D")
             cell.set_text_props(color="white", fontweight="bold")
         elif row % 2 == 0:
-            cell.set_facecolor("#EEF4FB")
+            cell.set_facecolor("#F0F4FA")
         cell.set_edgecolor("#DDD")
 
-    ax.set_title(f"Routes serving this area  ({n} routes)",
+    # Overlay colored route tags in the Routes column
+    # We need the cell bounding boxes, which are available after drawing
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+
+    for data_row_idx, (_, stop_row) in enumerate(table_df.iterrows()):
+        tbl_row = data_row_idx + 1   # +1 for header
+        cell    = tbl[tbl_row, 2]
+        bbox    = cell.get_window_extent(renderer)
+        # Convert window coords → axes coords
+        inv = ax.transAxes.inverted()
+        x0, y0 = inv.transform((bbox.x0, bbox.y0))
+        x1, y1 = inv.transform((bbox.x1, bbox.y1))
+
+        routes_raw = st[st["stop_id"] == stop_row["stop_id"]]
+        tags = sorted(set(
+            r["route_short_name"] + " (" + r["dir_label"] + ")"
+            for _, r in routes_raw.iterrows()
+        ))
+
+        x_cursor = x0 + 0.005
+        y_mid    = (y0 + y1) / 2
+        pad_x    = 0.004
+
+        for tag in tags:
+            rname  = tag.split(" (")[0]
+            color  = route_color_map.get(rname, GRAY)
+            t = ax.text(
+                x_cursor, y_mid, f" {tag} ",
+                transform=ax.transAxes,
+                fontsize=6.5, va="center",
+                bbox=dict(boxstyle="round,pad=0.18", facecolor=color,
+                          edgecolor="none", alpha=0.88),
+                color="white", fontweight="bold",
+            )
+            # Advance cursor by approximate tag width
+            t_width = len(tag) * 0.006
+            x_cursor += t_width + pad_x
+            if x_cursor > x1 - 0.01:
+                break   # prevent overflow outside cell
+
+    ax.set_title(f"Bus stops & serving routes  ({n} stops in range)",
                  fontsize=12, pad=12)
     fig.tight_layout()
 
-    csv_df = routes[["route_short_name", "route_long_name"]].copy()
-    csv_df.columns = ["Route", "Name"]
+    # CSV export
+    csv_df = table_df[["stop_name", "dist_m", "routes"]].copy()
+    csv_df.columns = ["Stop Name", "Distance", "Routes & Direction"]
 
     return _fig_to_bytes(fig), csv_df
 
@@ -355,6 +441,7 @@ def chart2_map(gtfs, lat, lon, radius_m):
     """
     Returns map_png_bytes.
     Square map with route shapes and bus-icon stops overlaid on basemap.
+    Includes a legend panel showing route number → color.
     """
     stops_in = filter_by_radius(
         gtfs["stops"].dropna(subset=["stop_lat", "stop_lon"]),
@@ -371,55 +458,107 @@ def chart2_map(gtfs, lat, lon, radius_m):
     routes    = gtfs["routes"][gtfs["routes"]["route_id"].isin(route_ids)].copy()
     routes    = routes.sort_values("route_short_name").reset_index(drop=True)
 
+    # Map shape_id → route short name (take the first match per shape)
+    shape_to_route = (
+        trips[["shape_id", "route_id"]]
+        .dropna(subset=["shape_id"])
+        .drop_duplicates("shape_id")
+        .merge(routes[["route_id", "route_short_name"]], on="route_id", how="left")
+        .set_index("shape_id")["route_short_name"]
+        .to_dict()
+    )
+
+    # Assign a consistent color per route (not per shape)
+    route_names_sorted = routes["route_short_name"].tolist()
+    route_color_map    = {r: ROUTE_COLORS[i % len(ROUTE_COLORS)]
+                          for i, r in enumerate(route_names_sorted)}
+
     shape_ids = set(trips["shape_id"].dropna())
     shapes_df = gtfs["shapes"][gtfs["shapes"]["shape_id"].isin(shape_ids)]
 
-    fig, ax = plt.subplots(figsize=(8, 8))
-    osm_ok  = _setup_map_ax(ax, lon, lat, radius_m)
+    # Wide figure: map on left, legend panel on right
+    fig = plt.figure(figsize=(11, 8))
+    ax_map = fig.add_axes([0.0, 0.0, 0.78, 1.0])   # map takes 78% width
+    ax_leg = fig.add_axes([0.79, 0.05, 0.20, 0.90]) # legend panel
+    ax_leg.axis("off")
+
+    osm_ok = _setup_map_ax(ax_map, lon, lat, radius_m)
 
     if osm_ok:
         cx, cy       = _to_merc([lon], [lat])
         cx, cy       = cx[0], cy[0]
         cir_x, cir_y = _circle_merc(lon, lat, radius_m)
+        ax_map.plot(cir_x, cir_y, color=BLUE, linewidth=1.8,
+                    linestyle="--", zorder=3, alpha=0.75)
 
-        ax.plot(cir_x, cir_y, color=BLUE, linewidth=1.8,
-                linestyle="--", zorder=3, alpha=0.75)
-
-        # Route shapes
-        for i, (sid, grp) in enumerate(shapes_df.groupby("shape_id")):
-            grp = grp.sort_values("shape_pt_sequence")
+        for sid, grp in shapes_df.groupby("shape_id"):
+            grp   = grp.sort_values("shape_pt_sequence")
             sx, sy = _to_merc(grp["shape_pt_lon"], grp["shape_pt_lat"])
-            ax.plot(sx, sy,
-                    color=ROUTE_COLORS[i % len(ROUTE_COLORS)],
-                    linewidth=1.8, alpha=0.7, zorder=4)
+            rname  = shape_to_route.get(sid, "")
+            color  = route_color_map.get(rname, GRAY)
+            ax_map.plot(sx, sy, color=color, linewidth=1.8, alpha=0.72, zorder=4)
 
-        # Bus stop icons
         bx, by = _to_merc(stops_in["stop_lon"], stops_in["stop_lat"])
-        _place_bus_icons(ax, bx, by)
-
-        # Center
-        ax.scatter([cx], [cy], c=RED, s=200, zorder=8, marker="*",
-                   label="Center")
+        _place_bus_icons(ax_map, bx, by)
+        ax_map.scatter([cx], [cy], c=RED, s=200, zorder=8, marker="*")
     else:
-        _fallback_limits(ax, lon, lat, radius_m)
+        _fallback_limits(ax_map, lon, lat, radius_m)
         deg = _deg(radius_m)
-        ax.add_patch(plt.Circle((lon, lat), deg, color=BLUE, fill=False,
-                                linewidth=1.5, linestyle="--", zorder=2))
-        for i, (sid, grp) in enumerate(shapes_df.groupby("shape_id")):
-            grp = grp.sort_values("shape_pt_sequence")
-            ax.plot(grp["shape_pt_lon"], grp["shape_pt_lat"],
-                    color=ROUTE_COLORS[i % len(ROUTE_COLORS)],
-                    linewidth=1.2, alpha=0.65, zorder=3)
-        _place_bus_icons(ax,
+        ax_map.add_patch(plt.Circle((lon, lat), deg, color=BLUE, fill=False,
+                                    linewidth=1.5, linestyle="--", zorder=2))
+        for sid, grp in shapes_df.groupby("shape_id"):
+            grp   = grp.sort_values("shape_pt_sequence")
+            rname = shape_to_route.get(sid, "")
+            color = route_color_map.get(rname, GRAY)
+            ax_map.plot(grp["shape_pt_lon"], grp["shape_pt_lat"],
+                        color=color, linewidth=1.2, alpha=0.65, zorder=3)
+        _place_bus_icons(ax_map,
                          stops_in["stop_lon"].values,
                          stops_in["stop_lat"].values)
-        ax.scatter([lon], [lat], c=RED, s=160, zorder=6, marker="*",
-                   label="Center")
+        ax_map.scatter([lon], [lat], c=RED, s=160, zorder=6, marker="*")
 
     n_routes = len(routes)
-    ax.set_title(f"Route paths near study area  ({n_routes} routes)", fontsize=13, pad=10)
-    ax.legend(loc="upper right", fontsize=9, framealpha=0.9)
-    fig.tight_layout()
+    ax_map.set_title(f"Route paths near study area  ({n_routes} routes)",
+                     fontsize=12, pad=8)
+
+    # ── Legend panel ──────────────────────────────────────────────────────────
+    ax_leg.set_title("Routes", fontsize=9, fontweight="bold",
+                     color="#333", loc="left", pad=6)
+
+    # Center star
+    ax_leg.plot(0.12, 0.97, marker="*", color=RED, markersize=9,
+                transform=ax_leg.transAxes, clip_on=False)
+    ax_leg.text(0.26, 0.97, "Center point", fontsize=7, va="center",
+                transform=ax_leg.transAxes, color="#333")
+
+    # One row per route
+    n_leg  = len(route_names_sorted)
+    y_step = min(0.055, 0.88 / max(n_leg, 1))
+    y_start = 0.91
+
+    for i, rname in enumerate(route_names_sorted):
+        color = route_color_map[rname]
+        y     = y_start - i * y_step
+        # Color swatch
+        ax_leg.add_patch(mpatches.FancyBboxPatch(
+            (0.02, y - 0.012), 0.18, 0.024,
+            boxstyle="round,pad=0.002",
+            facecolor=color, edgecolor="none",
+            transform=ax_leg.transAxes, clip_on=False,
+        ))
+        ax_leg.text(0.26, y, rname, fontsize=7, va="center",
+                    transform=ax_leg.transAxes, color="#222")
+
+    # Light border around legend panel
+    for spine in ax_leg.spines.values():
+        spine.set_visible(False)
+    ax_leg.add_patch(mpatches.FancyBboxPatch(
+        (0.0, 0.0), 1.0, 1.0,
+        boxstyle="round,pad=0.01",
+        facecolor="#F8F8F8", edgecolor="#DDD", linewidth=0.8,
+        transform=ax_leg.transAxes, zorder=0,
+    ))
+
     return _fig_to_bytes(fig)
 
 
