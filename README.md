@@ -4,7 +4,15 @@ A web-based transit analysis tool that visualizes bus stops, routes, service fre
 
 Built with Flask and Matplotlib. The same system has been applied to two cities using their respective open data sources.
 
+## Preview
 
+**Landing page**
+
+![Landing page](landing-page.png)
+
+**After running analysis**
+
+![After run analysis](after-run-analysis.png)
 
 ## Cities
 
@@ -69,7 +77,7 @@ tia-robot/
 ## Installation
 
 ```bash
-cd pgh_transit
+cd pittsburgh
 pip install -r requirements.txt
 ```
 
